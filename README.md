@@ -1,5 +1,20 @@
 # Granula - A granular synth aux cereales avec du chocolat dessus.
 
+Granula is a synth based on Arduino Due.
+This is still a very early WIP:
+
+  - hardware not fully defined yet (knobs, buttons, midi in)
+  - the main target is a granular but in order to start "small" in keep the fun, for now it's a monophonic synth
+  - needs menus, etc.
+
+## Hardware platform
+
+The code is targeted ton run on Arduino Due, but it sould be able to run on many other platforms if you:
+
+  - change the timers implementation (currently using DueTimer library)
+  - change the buttons/knobs capture
+
+
 ## Frequency, buffer sizes and sample rate
 
 We need to do some maths here.

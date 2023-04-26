@@ -1,7 +1,19 @@
 #include "tone_generator.h"
 #include "setup.h"
 #include "ntm.h"
+/*
 
+  TODO:
+
+    - No-click:
+    
+    Fetch the last value of the current buffer and the first value of the new
+    Create a one show buffer making a proper transition between the two
+    
+
+
+
+*/
 unsigned int tone_generate_square(unsigned char*buffer, unsigned short frequency) {
   int i;
 
