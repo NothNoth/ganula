@@ -4,7 +4,7 @@
 #include "controls.h"
 #include "display.h"
 #include <DueTimer.h>
-
+#include "midi.h"
 
 typedef enum {
   WAVE_SQUARE = 0,
@@ -25,6 +25,10 @@ void setup() {
   debug_setup(115200);
   debug_print("Granula");
 
+  midi_setup();
+  midi_register_noteon_cb(note_on);
+  midi_register_noteoff_cb(note_off);
+  
   display_setup();
   controls_setup();
   controls_register_pot_cb(pot_changed);
@@ -34,7 +38,6 @@ void setup() {
   sample_idx = 0;
 
   sample_size = tone_generate_square(sample, 100);
-  tone_dump(sample, sample_size);
   pinMode(AUDIO_PIN, OUTPUT);
 
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
@@ -45,6 +48,7 @@ void setup() {
 void loop() {
   controls_loop();
   display_loop();
+  midi_loop();
 }
 
 
@@ -63,9 +67,8 @@ void pot_changed(int value) {
   char dbg[64];
   sprintf(dbg, "Changing freq to %dHz", value);
   debug_print(dbg);
-  display_sample(sample, sample_size, wave_frequency);
 
-  
+  refresh_sample();
 }
 
 void refresh_sample() {
@@ -105,4 +108,23 @@ void bt1_pressed(int unused) {
 
 void bt2_pressed(int unused) {
   
+}
+
+void note_on(int channel, int pitch, int velocity) {
+  wave_frequency = pitchToFrequency(pitch);
+  char dbg[64];
+  sprintf(dbg, "Changing freq to %dHz", wave_frequency);
+  debug_print(dbg);
+
+  refresh_sample();
+}
+
+
+void note_off(int channel, int pitch, int velocity) {
+
+}
+
+
+int pitchToFrequency(int pitch) {
+  return int(440.0 * pow(2.0, (pitch - 69.0) / 12.0));
 }
