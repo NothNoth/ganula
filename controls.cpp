@@ -11,7 +11,7 @@ int refresh_ts;
 controls_cb_t pot_cb;
 controls_cb_t bt1_cb;
 controls_cb_t bt2_cb;
-#define REFRESH_INTERVAL_MS 200
+#define REFRESH_INTERVAL_MS 100
 
 void controls_setup() {
   pinMode(CONTROLS_BT1, INPUT);
@@ -36,29 +36,28 @@ void controls_loop() {
     int value  = analogRead(CONTROLS_POT);
     if (value != pot_value) {
       pot_value = value;
-      debug_print(pot_value);
       if (pot_cb) {
         pot_cb(pot_value);
       }
     }
 
-    value  = analogRead(CONTROLS_BT1);
-    if (value>>4 != bt1_value) {
+    value  = analogRead(CONTROLS_BT1)>>2;
+    if (value != bt1_value) { //Read value has changed
 
-      if (value>>4 > bt1_value) {
-        debug_print("BT1 pressed");
+      if (value < bt1_value) { //button released
+        debug_print("BT1");
         if (bt1_cb) {
           bt1_cb(0);
         }
       }
 
-      bt1_value = value>>4;  
+      bt1_value = value;  
     }
 
-    value  = analogRead(CONTROLS_BT2);
-    if (value>>4 != bt2_value) {
-      bt2_value = value>>4;
-      debug_print("BT2 pressed");
+    value  = analogRead(CONTROLS_BT2)>>2;
+    if (value != bt2_value) {
+      bt2_value = value;
+      debug_print("BT2");
       if (bt2_cb) {
         bt2_cb(0);
       }

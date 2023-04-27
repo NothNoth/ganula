@@ -17,7 +17,9 @@ typedef enum {
 unsigned char sample[MAX_SAMPLE_SIZE];
 unsigned int sample_size;
 unsigned int sample_idx;
+
 wave_t wave_form;
+unsigned int wave_frequency;
 
 void setup() {
   debug_setup(115200);
@@ -37,6 +39,7 @@ void setup() {
 
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
   wave_form = WAVE_SQUARE;
+  wave_frequency = 100;
 }
 
 void loop() {
@@ -56,40 +59,48 @@ void pot_changed(int value) {
   if (value < 20) {
     value = 20;
   }
-  debug_print("Changing freq to");
-  debug_print(value);
-  switch (wave_form) {
+  wave_frequency = value;
+  char dbg[64];
+  sprintf(dbg, "Changing freq to %dHz", value);
+  debug_print(dbg);
+  display_sample(sample, sample_size, wave_frequency);
+
+  
+}
+
+void refresh_sample() {
+switch (wave_form) {
     case WAVE_SQUARE:
     {
-      sample_size = tone_generate_square(sample, value);
+      sample_size = tone_generate_square(sample, wave_frequency);
       debug_print("Switch to square.");
     }
     break;
     case WAVE_SAW:
     {
-      sample_size = tone_generate_saw(sample, value);
+      sample_size = tone_generate_saw(sample, wave_frequency);
       debug_print("Switch to saw.");
     }
     break;
     case WAVE_SIN:
     {
-      sample_size = tone_generate_sin(sample, value);
+      sample_size = tone_generate_sin(sample, wave_frequency);
       debug_print("Switch to sin.");
     }
     break;
     case WAVE_TRIANGLE:
     {
-      sample_size = tone_generate_triangle(sample, value);
+      sample_size = tone_generate_triangle(sample, wave_frequency);
       debug_print("Switch to triangle.");
     }
     break;
   }
-  display_sample(sample, sample_size);
+  display_sample(sample, sample_size, wave_frequency);
 }
-
 
 void bt1_pressed(int unused) {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
+  refresh_sample();
 }
 
 void bt2_pressed(int unused) {
