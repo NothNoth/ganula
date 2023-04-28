@@ -15,7 +15,7 @@
 #define MAX_SAMPLE_SIZE (SAMPLE_RATE/20)
 
 
-#define CONTROLS_POT A0
-#define CONTROLS_BT1 A1
-#define CONTROLS_BT2 A2
+#define CONTROLS_BT1 A9
+#define CONTROLS_BT2 A10
+#define CONTROLS_POT A11
 #endif

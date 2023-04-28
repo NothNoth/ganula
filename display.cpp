@@ -69,6 +69,13 @@ void display_sample(unsigned char* sample, unsigned short len, unsigned int freq
   display.display();
 }
 
+void display_nosample() {
+  display.clearDisplay();
+  display.drawFastHLine(0, 16, 128, WHITE);
+
+  display.display();
+}
+
 //A dummy antialias which makes the link when there's a large
 //vertical gap between two consecutive points (ie SAWTOOTH)
 void antialias(int x, int y1, int y2) {

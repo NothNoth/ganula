@@ -14,12 +14,22 @@ typedef enum {
   WAVE_MAX
  } wave_t;
 
+typedef enum {
+  GMODE_RUN = 0,
+  GMODE_CUSTOM_POTSYNC = 1,
+  GMODE_CUSTOM_REC = 2,
+  GMODE_MAX
+} gmode_t;
+
 unsigned char sample[MAX_SAMPLE_SIZE];
 unsigned int sample_size;
 unsigned int sample_idx;
 
 wave_t wave_form;
 unsigned int wave_frequency;
+
+gmode_t mode;
+
 
 void setup() {
   debug_setup(115200);
@@ -43,6 +53,8 @@ void setup() {
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
   wave_form = WAVE_SQUARE;
   wave_frequency = 100;
+
+  mode = GMODE_RUN;
 }
 
 void loop() {
@@ -53,26 +65,28 @@ void loop() {
 
 
 void dacoutput() {
+  //Not in run mode? Don't play any sound.
+  if (mode != GMODE_RUN) {
+    return;
+  }
   analogWrite(AUDIO_PIN, sample[sample_idx]);
   sample_idx = (sample_idx+1)%sample_size;
 }
 
 
 void pot_changed(int value) {
-  value *= 2;
-  if (value < 20) {
-    value = 20;
-  }
-  wave_frequency = value;
-  char dbg[64];
-  sprintf(dbg, "Changing freq to %dHz", value);
-  debug_print(dbg);
 
-  refresh_sample();
 }
 
 void refresh_sample() {
-switch (wave_form) {
+  if (wave_frequency == 0) {
+    sample_idx = 0;
+    sample_size = 0;
+    display_nosample();
+    return;
+  }
+
+  switch (wave_form) {
     case WAVE_SQUARE:
     {
       sample_size = tone_generate_square(sample, wave_frequency);
@@ -107,21 +121,29 @@ void bt1_pressed(int unused) {
 }
 
 void bt2_pressed(int unused) {
-  
+  wave_frequency = 100;
+  refresh_sample();
 }
 
 void note_on(int channel, int pitch, int velocity) {
+  if (mode != GMODE_RUN) {
+    return;
+  }
+
   wave_frequency = pitchToFrequency(pitch);
   char dbg[64];
   sprintf(dbg, "Changing freq to %dHz", wave_frequency);
   debug_print(dbg);
-
   refresh_sample();
 }
 
 
 void note_off(int channel, int pitch, int velocity) {
-
+  if (mode != GMODE_RUN) {
+    return;
+  }
+  wave_frequency = 0;
+  refresh_sample();
 }
 
 
