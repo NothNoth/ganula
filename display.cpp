@@ -124,12 +124,77 @@ void display_potsync(int potpos) {
   display.display();
 }
 
-void display_rec() {
-  display.clearDisplay();
-  display.setCursor(1,1);
-  display.setTextSize(1);
-  display.setTextColor(BLACK, WHITE);
-  display.print("REC!");
+void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample) {
+  int x, y;
+  int xlmargin = 10;
+  int xrmargin = 117;
 
+  display.clearDisplay();
+  
+  //Print l r margins
+  for (y = 0; y < 32; y+= 3) {
+    display.drawPixel(xlmargin, y, WHITE);
+    display.drawPixel(xrmargin, y, WHITE);
+  }
+
+  //Print mid
+  for (y = 0; y < 32; y+= 5) {
+    display.drawPixel(64, y, WHITE);
+  }
+
+
+  //Print 0 reference
+  for (x = 0; x < 128; x+=2) {
+    display.drawPixel(x, 16, WHITE);
+  }
+
+  //Print rec cursor
+  for (y = 0; y < 32; y++) {
+    display.drawPixel(rec_bar, y, WHITE);
+  }
+
+  //Print pot position
+  int crosspos = potvalue * 32/255.0;
+
+  display.drawPixel(rec_bar-1, crosspos-1, WHITE);
+  display.drawPixel(rec_bar-1, crosspos, WHITE);
+  display.drawPixel(rec_bar-1, crosspos+1, WHITE);
+
+  display.drawPixel(rec_bar+1, crosspos-1, WHITE);
+  display.drawPixel(rec_bar+1, crosspos, WHITE);
+  display.drawPixel(rec_bar+1, crosspos+1, WHITE);
+
+  display.drawPixel(rec_bar, crosspos-1, WHITE);
+  display.drawPixel(rec_bar, crosspos, BLACK);
+  display.drawPixel(rec_bar, crosspos+1, WHITE);
+
+  //Print past
+  for (x = xlmargin; x < rec_bar; x++) {
+    display.drawPixel(x, recsample[x]*32/255.0, WHITE);
+     //TODO: fill right margin with early data to help for smooth transitions
+  }
+
+  display.display();
+}
+
+void display_rec_countdown() {
+  display.clearDisplay();
+  display.setCursor(5,1);
+  display.setTextSize(3);
+  display.setTextColor(BLACK, WHITE);
+
+  display.print("3");
+  delay(1000);
+  display.clearDisplay();
+  display.display();
+
+  display.print("2");
+  delay(1000);
+  display.clearDisplay();
+  display.display();
+
+  display.print("1");
+  delay(1000);
+  display.clearDisplay();
   display.display();
 }

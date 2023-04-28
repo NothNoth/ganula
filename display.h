@@ -7,5 +7,7 @@ void display_sample(unsigned char* sample, unsigned short len, unsigned int freq
 void display_nosample();
 
 void display_potsync(int potpos);
-void display_rec();
+
+void display_rec_countdown();
+void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample);
 #endif

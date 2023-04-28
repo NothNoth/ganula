@@ -16,9 +16,11 @@ typedef enum {
 } gmode_t;
 
 gmode_t mode;
-
+int last_pot_value;
+unsigned char customrecsample[128];
 
 void setup() {
+  last_pot_value = 0;
 
   //Setup debug print on serial port
   debug_setup(115200);
@@ -46,24 +48,86 @@ void setup() {
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
 }
 
+int custom_rec_idx;
+int custom_rec_ts;
+
 void loop() {
   controls_loop();
   display_loop();
   midi_loop();
+
+  if (mode == GMODE_CUSTOM_REC) {
+    if (millis() - custom_rec_ts > 120) {
+      custom_rec_idx++;
+
+      unsigned char potpos;
+
+      if (last_pot_value < 128) {
+        potpos = 0;
+      } else if (last_pot_value > 384) {
+        potpos = 255;
+      } else {
+        potpos = last_pot_value - 128;
+      }
+      
+      display_rec(custom_rec_idx, potpos, customrecsample);
+      customrecsample[custom_rec_idx] = potpos;
+      custom_rec_ts = millis();
+
+      //Done
+      if (custom_rec_idx == 128) {
+        gmode_switch(GMODE_RUN);
+      }
+    }
+  }
+}
+
+void gmode_switch(gmode_t new_mode) {
+
+  //Stop previous mode
+  switch (mode) {
+    case GMODE_RUN:
+      gsynth_enable(false);
+    break;
+    case GMODE_CUSTOM_POTSYNC:
+    break;
+    case GMODE_CUSTOM_REC:
+    break;
+  }
+
+  //Setup new mode
+  switch (new_mode) {
+    case GMODE_RUN:
+      gsynth_enable(true);
+    break;
+    case GMODE_CUSTOM_POTSYNC:
+      display_potsync(last_pot_value);
+    break;
+    case GMODE_CUSTOM_REC:
+      custom_rec_idx = 0;
+      custom_rec_ts = millis();
+      memset(customrecsample, 0x00, 128);
+      display_rec(custom_rec_idx, last_pot_value, customrecsample);
+    break;
+  }
+
+  mode = new_mode;
 }
 
 
-
 void pot_changed(int value) {
-  debug_print(value);
+  last_pot_value = value;
+
   switch (mode) {
     case GMODE_CUSTOM_POTSYNC:
       if (abs(value - POT_RANGE/2.0) < 5) { //Done !
-        mode = GMODE_CUSTOM_REC;
-        display_rec();
+        gmode_switch(GMODE_CUSTOM_REC);
         return;
       }
       display_potsync(value);
+    break;
+    case GMODE_CUSTOM_REC:
+      //display_rec(custom_rec_idx, value, customrecsample);
     break;
   }
 }
@@ -77,17 +141,13 @@ void bt2_pressed(int unused) {
 
   switch (mode) {
     case GMODE_RUN:
-      gsynth_enable(false);
-      mode =  GMODE_CUSTOM_POTSYNC;
-      display_potsync(0);
+      gmode_switch(GMODE_CUSTOM_POTSYNC);
     break;
     case GMODE_CUSTOM_POTSYNC:
-      gsynth_enable(true);
-      mode =  GMODE_RUN;
+      gmode_switch(GMODE_RUN);
     break;
     case GMODE_CUSTOM_REC:
-      gsynth_enable(true);
-      mode =  GMODE_RUN;
+      gmode_switch(GMODE_RUN);
     break;
   }
 }
