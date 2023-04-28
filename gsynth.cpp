@@ -5,31 +5,62 @@
 #include "display.h"
 #include "ntm.h"
 
+
+
+typedef enum {
+  BUFFER_A = 0,
+  BUFFER_B = 1
+ } buffer_t;
+
+typedef struct {
+  unsigned int wave_frequency;
+
+  bool flip_buffers;
+  unsigned char * current;
+  unsigned int * current_size;
+  unsigned char * next;
+  unsigned int * next_size;
+
+  unsigned int sample_idx;
+
+  unsigned char sampleA[MAX_SAMPLE_SIZE];
+  unsigned int sampleA_size;
+
+  unsigned char sampleB[MAX_SAMPLE_SIZE];
+  unsigned int sampleB_size;
+} voice_buffer_t;
+
 unsigned char custom_wave[MAX_SAMPLE_SIZE];
 unsigned int custom_wave_size;
 
-
-unsigned char sample[MAX_SAMPLE_SIZE];
-unsigned int sample_size;
-unsigned int sample_idx;
-
 wave_t wave_form;
-unsigned int wave_frequency;
 bool gsynth_running = true;
-
+voice_buffer_t voice;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
 
 void gsynth_setup() {
   wave_form = WAVE_SQUARE;
-  wave_frequency = 0;
+  voice.wave_frequency = 0;
   gsynth_running = true;
+
+  //Use buffer A
+  memset(&voice, 0x00, sizeof(voice_buffer_t));
+  voice.current = voice.sampleA;
+  voice.current_size = &voice.sampleA_size;
+  voice.next = voice.sampleB;
+  voice.next_size = &voice.sampleB_size;
+  voice.flip_buffers = false;
   generate_sample();
 }
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
+  voice.sampleA_size = 0;
+  voice.sampleB_size = 0;
+  voice.sample_idx = 0;
+
   generate_sample();
 }
 
@@ -43,8 +74,28 @@ void dacoutput() {
   if (!gsynth_running) {
     return;
   }
-  analogWrite(AUDIO_PIN, sample[sample_idx]);
-  sample_idx = (sample_idx+1)%sample_size;
+  if (voice.wave_frequency == 0) {
+    analogWrite(AUDIO_PIN, 0);
+    return;
+  }
+
+  analogWrite(AUDIO_PIN, voice.current[voice.sample_idx]);
+  voice.sample_idx++;
+
+  //Reach end of buffer
+  if (voice.sample_idx >= (*voice.current_size)) {
+    voice.sample_idx = 0;
+
+    if (voice.flip_buffers == true) {
+      unsigned char * tmp = voice.current;
+      unsigned int * tmp_size = voice.current_size;
+      voice.current = voice.next;
+      voice.current_size = voice.next_size;
+      voice.next = tmp;
+      voice.next_size = tmp_size;
+      voice.flip_buffers = false;
+    }
+  }
 }
 
 void generate_sample() {
@@ -53,46 +104,46 @@ void generate_sample() {
     return;
   }
 
+  previous_last_value = voice.current[(*voice.current_size)-1];
+
   //No sample played
-  if (wave_frequency == 0) {
-    sample_idx = 0;
-    sample_size = 0;
+  if (voice.wave_frequency == 0) {
+    voice.sample_idx = 0;
+    *voice.next_size = 0;
+    voice.flip_buffers = true;
     display_nosample();
     return;
   }
-
-  //Save where the previous wave ends
-  previous_last_value = sample[sample_size-1];
-
+ 
   //Generate sample depending on waveform
   switch (wave_form) {
     case WAVE_SQUARE:
     {
-      sample_size = tone_generate_square(sample, wave_frequency);
+      *voice.next_size = tone_generate_square(voice.next, voice.wave_frequency);
       debug_print("Switch to square.");
     }
     break;
     case WAVE_SAW:
     {
-      sample_size = tone_generate_saw(sample, wave_frequency);
+      *voice.next_size = tone_generate_saw(voice.next, voice.wave_frequency);
       debug_print("Switch to saw.");
     }
     break;
     case WAVE_SIN:
     {
-      sample_size = tone_generate_sin(sample, wave_frequency);
+      *voice.next_size = tone_generate_sin(voice.next, voice.wave_frequency);
       debug_print("Switch to sin.");
     }
     break;
     case WAVE_TRIANGLE:
     {
-      sample_size = tone_generate_triangle(sample, wave_frequency);
+      *voice.next_size = tone_generate_triangle(voice.next, voice.wave_frequency);
       debug_print("Switch to triangle.");
     }
     break;
     case WAVE_CUSTOM:
     {
-      sample_size = tone_generate_custom(sample, custom_wave, custom_wave_size, wave_frequency);
+      *voice.next_size = tone_generate_custom(voice.next, custom_wave, custom_wave_size, voice.wave_frequency);
       debug_print("Switch to Custom.");
     }
     break;
@@ -102,15 +153,16 @@ void generate_sample() {
   //Previous sample was ending at walue "previous_last_value"
   //-> find in new buffer an index where we have the same value
   // for a smooth transition (if none, start at index 0)
-  sample_idx = 0;
-  for (int i = 0; i < sample_size; i++) {
-    if (sample[i] == previous_last_value) {
-      sample_idx = i;
+  voice.sample_idx = 0;
+  for (int i = 0; i < *voice.next_size; i++) {
+    if (voice.next[i] == previous_last_value) {
+      voice.sample_idx = i;
       break;
     }
   }
 
-  display_sample(sample, sample_size, wave_frequency);
+  display_sample(voice.next, *voice.next_size, voice.wave_frequency);
+  voice.flip_buffers = true;
 }
 
 
@@ -119,9 +171,9 @@ void note_on(int channel, int pitch, int velocity) {
     return;
   }
 
-  wave_frequency = pitchToFrequency(pitch);
+  voice.wave_frequency = pitchToFrequency(pitch);
   char dbg[64];
-  sprintf(dbg, "Changing freq to %dHz", wave_frequency);
+  sprintf(dbg, "Changing freq to %dHz", voice.wave_frequency);
   debug_print(dbg);
   generate_sample();
 }
@@ -131,7 +183,7 @@ void note_off(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
   }
-  wave_frequency = 0;
+  voice.wave_frequency = 0;
   generate_sample();
 }
 
@@ -145,5 +197,5 @@ void gsynth_save_custom(unsigned char *customrec, int len) {
   memcpy(custom_wave, customrec, len>MAX_SAMPLE_SIZE?MAX_SAMPLE_SIZE:len);
   custom_wave_size = len;
   wave_form = WAVE_CUSTOM;
-  wave_frequency = 100;
+  voice.wave_frequency = 100;
 }
