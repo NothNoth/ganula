@@ -40,19 +40,14 @@ int flip_count;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
+void init_buffers();
 
 void gsynth_setup() {
   wave_form = WAVE_SQUARE;
   voice.wave_frequency = 0;
   gsynth_running = true;
 
-  //Use buffer A
-  memset(&voice, 0x00, sizeof(voice_buffer_t));
-  voice.current = voice.sampleA;
-  voice.current_size = &voice.sampleA_size;
-  voice.next = voice.sampleB;
-  voice.next_size = &voice.sampleB_size;
-  voice.flip_buffers = false;
+  init_buffers();
   generate_sample();
 
   char dbg[32];
@@ -66,9 +61,7 @@ void gsynth_setup() {
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
-  voice.sampleA_size = 0;
-  voice.sampleB_size = 0;
-  voice.sample_idx = 0;
+  init_buffers();
 
   generate_sample();
 }
@@ -77,14 +70,44 @@ void gsynth_nextwave() {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
   generate_sample();
 }
-char foo[64];
+
+void init_buffers() {
+  memset(&voice, 0x00, sizeof(voice_buffer_t));
+
+//By default current points to A
+  voice.current = voice.sampleA;
+  voice.current_size = &voice.sampleA_size;
+//And next to B
+  voice.next = voice.sampleB;
+  voice.next_size = &voice.sampleB_size;
+
+  voice.flip_buffers = false;
+}
+
+
+void flip_buffers() {
+  unsigned char * tmp = voice.current;
+  unsigned int * tmp_size = voice.current_size;
+
+  voice.current = voice.next;
+  voice.current_size = voice.next_size;
+
+  voice.next = tmp;
+  voice.next_size = tmp_size;
+
+  voice.flip_buffers = false;
+  flip_count++;
+}
+
 
 void dacoutput() {
   //Not in run mode? Don't play any sound.
   if (!gsynth_running) {
     return;
   }
-  if (voice.wave_frequency == 0) {
+
+  //No buffer? Just output 0
+  if (voice.current_size == 0) {
     analogWrite(AUDIO_PIN, 0);
     return;
   }
@@ -93,19 +116,11 @@ void dacoutput() {
   voice.sample_idx++;
 
   //Reach end of buffer
-  sprintf(foo, "%d / %d\n", voice.sample_idx, (*voice.current_size));
   if (voice.sample_idx >= (*voice.current_size)) {
-    voice.sample_idx = 0;
+    voice.sample_idx = 0; //restart
 
-    if (voice.flip_buffers == true) {
-      unsigned char * tmp = voice.current;
-      unsigned int * tmp_size = voice.current_size;
-      voice.current = voice.next;
-      voice.current_size = voice.next_size;
-      voice.next = tmp;
-      voice.next_size = tmp_size;
-      voice.flip_buffers = false;
-      flip_count++;
+    if (voice.flip_buffers == true) { //Eventually flip buffers for a new sample
+      flip_buffers();
     }
   }
 }
@@ -116,17 +131,10 @@ void generate_sample() {
     return;
   }
 
-  char dbg[32];
-  sprintf(dbg, "Gen on : %08x\n", voice.next);
-  debug_print(dbg);
-  sprintf(dbg, "Flipcoubnt: %d\n", flip_count);
-  debug_print(dbg);
-
   previous_last_value = voice.current[(*voice.current_size)-1];
 
   //No sample played
   if (voice.wave_frequency == 0) {
-    voice.sample_idx = 0;
     *voice.next_size = 0;
     voice.flip_buffers = true;
     display_nosample();
@@ -166,18 +174,6 @@ void generate_sample() {
       debug_print("Switch to Custom.");
     }
     break;
-  }
-
-  //Anti click trick:
-  //Previous sample was ending at walue "previous_last_value"
-  //-> find in new buffer an index where we have the same value
-  // for a smooth transition (if none, start at index 0)
-  voice.sample_idx = 0;
-  for (int i = 0; i < *voice.next_size; i++) {
-    if (voice.next[i] == previous_last_value) {
-      voice.sample_idx = i;
-      break;
-    }
   }
 
   display_sample(voice.next, *voice.next_size, voice.wave_frequency);
