@@ -36,6 +36,7 @@ unsigned int custom_wave_size;
 wave_t wave_form;
 bool gsynth_running = true;
 voice_buffer_t voice;
+int flip_count;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
@@ -53,6 +54,14 @@ void gsynth_setup() {
   voice.next_size = &voice.sampleB_size;
   voice.flip_buffers = false;
   generate_sample();
+
+  char dbg[32];
+  sprintf(dbg, "BufferA : %08x\n", voice.sampleA);
+  debug_print(dbg);
+  sprintf(dbg, "BufferB : %08x\n", voice.sampleB);
+  debug_print(dbg);
+
+  flip_count = 0;
 }
 
 void gsynth_enable(bool run) {
@@ -68,6 +77,7 @@ void gsynth_nextwave() {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
   generate_sample();
 }
+char foo[64];
 
 void dacoutput() {
   //Not in run mode? Don't play any sound.
@@ -83,6 +93,7 @@ void dacoutput() {
   voice.sample_idx++;
 
   //Reach end of buffer
+  sprintf(foo, "%d / %d\n", voice.sample_idx, (*voice.current_size));
   if (voice.sample_idx >= (*voice.current_size)) {
     voice.sample_idx = 0;
 
@@ -94,6 +105,7 @@ void dacoutput() {
       voice.next = tmp;
       voice.next_size = tmp_size;
       voice.flip_buffers = false;
+      flip_count++;
     }
   }
 }
@@ -103,6 +115,12 @@ void generate_sample() {
   if (!gsynth_running) {
     return;
   }
+
+  char dbg[32];
+  sprintf(dbg, "Gen on : %08x\n", voice.next);
+  debug_print(dbg);
+  sprintf(dbg, "Flipcoubnt: %d\n", flip_count);
+  debug_print(dbg);
 
   previous_last_value = voice.current[(*voice.current_size)-1];
 
@@ -114,6 +132,7 @@ void generate_sample() {
     display_nosample();
     return;
   }
+
  
   //Generate sample depending on waveform
   switch (wave_form) {
