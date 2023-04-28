@@ -1,18 +1,12 @@
 #include "setup.h"
 #include "ntm.h"
-#include "tone_generator.h"
 #include "controls.h"
 #include "display.h"
 #include <DueTimer.h>
 #include "midi.h"
+#include "gsynth.h"
 
-typedef enum {
-  WAVE_SQUARE = 0,
-  WAVE_SAW = 1,
-  WAVE_SIN = 2,
-  WAVE_TRIANGLE = 3,
-  WAVE_MAX
- } wave_t;
+
 
 typedef enum {
   GMODE_RUN = 0,
@@ -20,13 +14,6 @@ typedef enum {
   GMODE_CUSTOM_REC = 2,
   GMODE_MAX
 } gmode_t;
-
-unsigned char sample[MAX_SAMPLE_SIZE];
-unsigned int sample_size;
-unsigned int sample_idx;
-
-wave_t wave_form;
-unsigned int wave_frequency;
 
 gmode_t mode;
 
@@ -45,14 +32,9 @@ void setup() {
   controls_register_bt1_cb(bt1_pressed);
   controls_register_bt2_cb(bt2_pressed);
 
-  sample_idx = 0;
-
-  sample_size = tone_generate_square(sample, 100);
   pinMode(AUDIO_PIN, OUTPUT);
 
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
-  wave_form = WAVE_SQUARE;
-  wave_frequency = 100;
 
   mode = GMODE_RUN;
 }
@@ -64,89 +46,16 @@ void loop() {
 }
 
 
-void dacoutput() {
-  //Not in run mode? Don't play any sound.
-  if (mode != GMODE_RUN) {
-    return;
-  }
-  analogWrite(AUDIO_PIN, sample[sample_idx]);
-  sample_idx = (sample_idx+1)%sample_size;
-}
-
 
 void pot_changed(int value) {
 
 }
 
-void refresh_sample() {
-  if (wave_frequency == 0) {
-    sample_idx = 0;
-    sample_size = 0;
-    display_nosample();
-    return;
-  }
-
-  switch (wave_form) {
-    case WAVE_SQUARE:
-    {
-      sample_size = tone_generate_square(sample, wave_frequency);
-      debug_print("Switch to square.");
-    }
-    break;
-    case WAVE_SAW:
-    {
-      sample_size = tone_generate_saw(sample, wave_frequency);
-      debug_print("Switch to saw.");
-    }
-    break;
-    case WAVE_SIN:
-    {
-      sample_size = tone_generate_sin(sample, wave_frequency);
-      debug_print("Switch to sin.");
-    }
-    break;
-    case WAVE_TRIANGLE:
-    {
-      sample_size = tone_generate_triangle(sample, wave_frequency);
-      debug_print("Switch to triangle.");
-    }
-    break;
-  }
-  display_sample(sample, sample_size, wave_frequency);
-}
 
 void bt1_pressed(int unused) {
-  wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
-  refresh_sample();
+  gsynth_nextwave();
 }
 
 void bt2_pressed(int unused) {
-  wave_frequency = 100;
-  refresh_sample();
-}
-
-void note_on(int channel, int pitch, int velocity) {
-  if (mode != GMODE_RUN) {
-    return;
-  }
-
-  wave_frequency = pitchToFrequency(pitch);
-  char dbg[64];
-  sprintf(dbg, "Changing freq to %dHz", wave_frequency);
-  debug_print(dbg);
-  refresh_sample();
-}
-
-
-void note_off(int channel, int pitch, int velocity) {
-  if (mode != GMODE_RUN) {
-    return;
-  }
-  wave_frequency = 0;
-  refresh_sample();
-}
-
-
-int pitchToFrequency(int pitch) {
-  return int(440.0 * pow(2.0, (pitch - 69.0) / 12.0));
+  gsynth_enable(false);
 }
