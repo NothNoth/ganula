@@ -19,24 +19,31 @@ gmode_t mode;
 
 
 void setup() {
+
+  //Setup debug print on serial port
   debug_setup(115200);
   debug_print("Granula");
 
+  pinMode(AUDIO_PIN, OUTPUT);
+  mode = GMODE_RUN;
+
+  //Setup Display
+  display_setup();
+
+  //Setup MIDI receive
   midi_setup();
   midi_register_noteon_cb(note_on);
   midi_register_noteoff_cb(note_off);
   
-  display_setup();
+  //Setup controls
   controls_setup();
   controls_register_pot_cb(pot_changed);
   controls_register_bt1_cb(bt1_pressed);
   controls_register_bt2_cb(bt2_pressed);
 
-  pinMode(AUDIO_PIN, OUTPUT);
-
+  //Setup synth
+  gsynth_setup();
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
-
-  mode = GMODE_RUN;
 }
 
 void loop() {
@@ -48,7 +55,17 @@ void loop() {
 
 
 void pot_changed(int value) {
-
+  debug_print(value);
+  switch (mode) {
+    case GMODE_CUSTOM_POTSYNC:
+      if (abs(value - POT_RANGE/2.0) < 5) { //Done !
+        mode = GMODE_CUSTOM_REC;
+        display_rec();
+        return;
+      }
+      display_potsync(value);
+    break;
+  }
 }
 
 
@@ -57,5 +74,20 @@ void bt1_pressed(int unused) {
 }
 
 void bt2_pressed(int unused) {
-  gsynth_enable(false);
+
+  switch (mode) {
+    case GMODE_RUN:
+      gsynth_enable(false);
+      mode =  GMODE_CUSTOM_POTSYNC;
+      display_potsync(0);
+    break;
+    case GMODE_CUSTOM_POTSYNC:
+      gsynth_enable(true);
+      mode =  GMODE_RUN;
+    break;
+    case GMODE_CUSTOM_REC:
+      gsynth_enable(true);
+      mode =  GMODE_RUN;
+    break;
+  }
 }

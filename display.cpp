@@ -1,5 +1,6 @@
 #include "display.h"
 #include "ntm.h"
+#include "setup.h"
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -12,15 +13,25 @@ Adafruit_SSD1306 display;
 #define SHOW_TWO_PERIODS //Show two complete periods of the waveform?
 
 void antialias(int x, int y1, int y2);
+void splash();
 
 void display_setup() {
   display = Adafruit_SSD1306(128, 32, &Wire);
   display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS);
+  splash();
+}
+
+void splash() {
   display.clearDisplay();
-  display.display();
+
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.println("[Granula]");
+  display.print(" [Granula] ");
+  display.invertDisplay(true);
+  display.display();
+  delay(1500);
+  display.invertDisplay(false);
+  display.clearDisplay();
   display.display();
 }
 
@@ -45,7 +56,10 @@ void display_sample(unsigned char* sample, unsigned short len, unsigned int freq
       antialias(x+64, y, sample[int((x+1)*xScale)]>>3);
     }
   }
-  antialias(x+64, sample[int(len-1)]>>3, sample[0]>>3);
+
+//FIXME : 
+  display.drawFastVLine(x+64, 31, 0, WHITE);
+  display.drawFastVLine(x+64, 0, 31, WHITE);
 
 #else
   float xScale = (len/128.0);
@@ -83,4 +97,39 @@ void antialias(int x, int y1, int y2) {
     return;
 
   display.drawFastVLine(x, y1<y2?y1:y2, y1<y2?y2-y1:y1-y2, WHITE);
+}
+
+void display_potsync(int potpos) {
+  int i;
+
+  int cursor = (potpos *128.0) / POT_RANGE;
+
+  display.clearDisplay();
+
+  for (i = 0; i < 32; i++) {
+    display.drawPixel(63, i, WHITE);
+    display.drawPixel(65, i, WHITE);
+  }
+
+
+  for (i = 0; i < 32; i++) {
+    display.drawPixel(cursor, i, WHITE);
+  }
+
+  display.setCursor(1,1);
+  display.setTextSize(1);
+  display.setTextColor(BLACK, WHITE);
+  display.print("Align bars");
+
+  display.display();
+}
+
+void display_rec() {
+  display.clearDisplay();
+  display.setCursor(1,1);
+  display.setTextSize(1);
+  display.setTextColor(BLACK, WHITE);
+  display.print("REC!");
+
+  display.display();
 }

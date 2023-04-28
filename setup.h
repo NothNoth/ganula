@@ -15,6 +15,11 @@
 #define MAX_SAMPLE_SIZE (SAMPLE_RATE/20)
 
 
+
+//Potentiometer read value range
+#define POT_RANGE 512
+
+//Controls pins
 #define CONTROLS_BT1 A9
 #define CONTROLS_BT2 A10
 #define CONTROLS_POT A11

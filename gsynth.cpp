@@ -15,23 +15,24 @@ bool gsynth_running = true;
 
 
 int pitchToFrequency(int pitch);
+void generate_sample();
 
 
 void gsynth_setup() {
   wave_form = WAVE_SQUARE;
-  wave_frequency = 100;
-  sample_idx = 0;
-  sample_size = tone_generate_square(sample, 100);
+  wave_frequency = 0;
   gsynth_running = true;
+  generate_sample();
 }
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
+  generate_sample();
 }
 
 void gsynth_nextwave() {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
-  refresh_sample();
+  generate_sample();
 }
 
 void dacoutput() {
@@ -43,7 +44,13 @@ void dacoutput() {
   sample_idx = (sample_idx+1)%sample_size;
 }
 
-void refresh_sample() {
+void generate_sample() {
+  unsigned int previous_last_value;
+  if (!gsynth_running) {
+    return;
+  }
+
+  //No sample played
   if (wave_frequency == 0) {
     sample_idx = 0;
     sample_size = 0;
@@ -51,6 +58,10 @@ void refresh_sample() {
     return;
   }
 
+  //Save where the previous wave ends
+  previous_last_value = sample[sample_size-1];
+
+  //Generate sample depending on waveform
   switch (wave_form) {
     case WAVE_SQUARE:
     {
@@ -77,6 +88,19 @@ void refresh_sample() {
     }
     break;
   }
+
+  //Anti click trick:
+  //Previous sample was ending at walue "previous_last_value"
+  //-> find in new buffer an index where we have the same value
+  // for a smooth transition (if none, start at index 0)
+  sample_idx = 0;
+  for (int i = 0; i < sample_size; i++) {
+    if (sample[i] == previous_last_value) {
+      sample_idx = i;
+      break;
+    }
+  }
+
   display_sample(sample, sample_size, wave_frequency);
 }
 
@@ -90,7 +114,7 @@ void note_on(int channel, int pitch, int velocity) {
   char dbg[64];
   sprintf(dbg, "Changing freq to %dHz", wave_frequency);
   debug_print(dbg);
-  refresh_sample();
+  generate_sample();
 }
 
 
@@ -99,7 +123,7 @@ void note_off(int channel, int pitch, int velocity) {
     return;
   }
   wave_frequency = 0;
-  refresh_sample();
+  generate_sample();
 }
 
 

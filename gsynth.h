@@ -15,7 +15,6 @@ void gsynth_setup();
 void gsynth_enable(bool run);
 void gsynth_nextwave();
 void dacoutput();
-void refresh_sample();
 void note_on(int channel, int pitch, int velocity);
 void note_off(int channel, int pitch, int velocity);
 
