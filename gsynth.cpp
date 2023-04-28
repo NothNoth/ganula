@@ -5,6 +5,10 @@
 #include "display.h"
 #include "ntm.h"
 
+unsigned char custom_wave[MAX_SAMPLE_SIZE];
+unsigned int custom_wave_size;
+
+
 unsigned char sample[MAX_SAMPLE_SIZE];
 unsigned int sample_size;
 unsigned int sample_idx;
@@ -16,7 +20,6 @@ bool gsynth_running = true;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
-
 
 void gsynth_setup() {
   wave_form = WAVE_SQUARE;
@@ -87,6 +90,12 @@ void generate_sample() {
       debug_print("Switch to triangle.");
     }
     break;
+    case WAVE_CUSTOM:
+    {
+      sample_size = tone_generate_custom(sample, custom_wave, custom_wave_size, wave_frequency);
+      debug_print("Switch to Custom.");
+    }
+    break;
   }
 
   //Anti click trick:
@@ -131,3 +140,10 @@ int pitchToFrequency(int pitch) {
   return int(440.0 * pow(2.0, (pitch - 69.0) / 12.0));
 }
 
+
+void gsynth_save_custom(unsigned char *customrec, int len) {
+  memcpy(custom_wave, customrec, len>MAX_SAMPLE_SIZE?MAX_SAMPLE_SIZE:len);
+  custom_wave_size = len;
+  wave_form = WAVE_CUSTOM;
+  wave_frequency = 100;
+}

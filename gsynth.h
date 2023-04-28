@@ -7,6 +7,7 @@ typedef enum {
   WAVE_SAW = 1,
   WAVE_SIN = 2,
   WAVE_TRIANGLE = 3,
+  WAVE_CUSTOM = 4,
   WAVE_MAX
  } wave_t;
 
@@ -17,7 +18,7 @@ void gsynth_nextwave();
 void dacoutput();
 void note_on(int channel, int pitch, int velocity);
 void note_off(int channel, int pitch, int velocity);
-
+void gsynth_save_custom(unsigned char *customrec, int len);
 
 
 #endif

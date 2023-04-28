@@ -17,7 +17,11 @@ typedef enum {
 
 gmode_t mode;
 int last_pot_value;
-unsigned char customrecsample[128];
+
+#define CUSTOM_REC_SAMPLE_SIZE 128
+int custom_rec_idx;
+int custom_rec_ts;
+unsigned char customrecsample[CUSTOM_REC_SAMPLE_SIZE];
 
 void setup() {
   last_pot_value = 0;
@@ -48,8 +52,6 @@ void setup() {
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
 }
 
-int custom_rec_idx;
-int custom_rec_ts;
 
 void loop() {
   controls_loop();
@@ -61,7 +63,6 @@ void loop() {
       custom_rec_idx++;
 
       unsigned char potpos;
-
       if (last_pot_value < 128) {
         potpos = 0;
       } else if (last_pot_value > 384) {
@@ -75,7 +76,8 @@ void loop() {
       custom_rec_ts = millis();
 
       //Done
-      if (custom_rec_idx == 128) {
+      if (custom_rec_idx == CUSTOM_REC_SAMPLE_SIZE) {
+        gsynth_save_custom(customrecsample+10, CUSTOM_REC_SAMPLE_SIZE-20);
         gmode_switch(GMODE_RUN);
       }
     }
@@ -106,7 +108,7 @@ void gmode_switch(gmode_t new_mode) {
     case GMODE_CUSTOM_REC:
       custom_rec_idx = 0;
       custom_rec_ts = millis();
-      memset(customrecsample, 0x00, 128);
+      memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE);
       display_rec(custom_rec_idx, last_pot_value, customrecsample);
     break;
   }
