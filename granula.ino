@@ -125,7 +125,7 @@ void gmode_switch(gmode_t new_mode) {
 
 void pot_changed(int value) {
   menu_pot(value);
-  /*
+  
   last_pot_value = value;
   switch (mode) {
     case GMODE_CUSTOM_POTSYNC:
@@ -136,32 +136,17 @@ void pot_changed(int value) {
       display_potsync(value);
     break;
     case GMODE_CUSTOM_REC:
-      //display_rec(custom_rec_idx, value, customrecsample);
     break;
   }
-  */
+
 }
 
 
 void bt1_pressed(int unused) {
   menu_flip();
-  //gsynth_nextwave();
 }
 
 void bt2_pressed(int unused) {
 
   menu_select();
-/**
-  switch (mode) {
-    case GMODE_RUN:
-      gmode_switch(GMODE_CUSTOM_POTSYNC);
-    break;
-    case GMODE_CUSTOM_POTSYNC:
-      gmode_switch(GMODE_RUN);
-    break;
-    case GMODE_CUSTOM_REC:
-      gmode_switch(GMODE_RUN);
-    break;
-  }
-  */
 }

@@ -1,15 +1,24 @@
 #include "menu.h"
 #include "display.h"
 #include "ntm.h"
+#include "gsynth.h"
+#include "granula.h"
 #include <string.h>
 
 bool menu_shown;
 int menu_idx;
 
 #define MAX_MENU_ITEMS 4
+typedef enum {
+  menu_tag_waveform = 0,
+  menu_tag_waveform_new = 1,
+  menu_tag_enveloppe = 2
+} menu_tag_t;
+
 typedef struct 
 {
   char name[16];
+  menu_tag_t tag;
 } menu_item_t;
 
 menu_item_t items[MAX_MENU_ITEMS];
@@ -21,9 +30,13 @@ void menu_setup() {
   menu_shown = false;
   memset(items, 0x00, MAX_MENU_ITEMS * sizeof(menu_item_t));
   strcpy(items[0].name, "Waveform    ");
+  items[0].tag = menu_tag_waveform;
   strcpy(items[1].name, "New waveform");
+  items[0].tag = menu_tag_waveform_new;
   strcpy(items[2].name, "Enveloppe   ");
+  items[0].tag = menu_tag_enveloppe;
   strcpy(items[3].name, "blop        ");
+  items[0].tag = menu_tag_enveloppe;
   
   menu_idx = 0;
 }
@@ -43,7 +56,6 @@ void menu_refresh() {
     return;
   }
 
-
   display_clear();
   next_idx = menu_idx + 1;
   next_next_idx = next_idx + 1;
@@ -60,11 +72,28 @@ void menu_refresh() {
 
 void menu_select() {
   debug_print(items[menu_idx].name);
+  switch (items[menu_idx].tag) {
+    case menu_tag_waveform:
+      gsynth_nextwave();
+      gmode_switch(GMODE_RUN);
+      menu_flip();
+      return;
+    break;
+    case menu_tag_waveform_new:
+      gmode_switch(GMODE_CUSTOM_POTSYNC);
+      menu_flip();
+      return;
+    break;
+    case menu_tag_enveloppe:
+    break;
+  }
 }
 
 
 void menu_pot(int value) {
-  debug_print(value);
+  if (menu_shown == false) {
+    return;
+  }
   // (512 -> MAX_ITEMS)
   int new_idx = value * (float)(MAX_MENU_ITEMS) / 512.0;
   if (new_idx == menu_idx) {
