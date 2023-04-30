@@ -24,7 +24,7 @@ void display_setup() {
 void splash() {
   display.clearDisplay();
 
-  display.setCursor(1,6);
+  display.setCursor(1,8);
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.print(" [Granula] ");

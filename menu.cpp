@@ -35,6 +35,9 @@ typedef struct {
 menu_t root;
 menu_t waveforms;
 
+menu_t *current;
+
+
 void menu_refresh();
 
 void menu_setup() {
@@ -46,11 +49,11 @@ void menu_setup() {
   strcpy(root.items[0].name, "Waveform    ");
   root.items[0].tag = menu_tag_waveform;
   strcpy(root.items[1].name, "New waveform");
-  root.items[0].tag = menu_tag_waveform_new;
+  root.items[1].tag = menu_tag_waveform_new;
   strcpy(root.items[2].name, "Enveloppe   ");
-  root.items[0].tag = menu_tag_enveloppe;
+  root.items[2].tag = menu_tag_enveloppe;
   strcpy(root.items[3].name, "blop        ");
-  root.items[0].tag = menu_tag_enveloppe;
+  root.items[3].tag = menu_tag_enveloppe;
   
 //Waveforms menu
   waveforms.menu_idx = 0;
@@ -63,6 +66,8 @@ void menu_setup() {
   waveforms.items[2].tag = menu_tag_waveform_triangle;
   strcpy(waveforms.items[3].name, "Custom 1");
   waveforms.items[3].tag = menu_tag_waveform_custom1;
+
+  current = &root;
 }
 
 void menu_loop() {
@@ -71,6 +76,8 @@ void menu_loop() {
 
 void menu_flip() {
   menu_shown = !menu_shown;
+  current = &root;
+
   menu_refresh();
 }
 
@@ -81,23 +88,26 @@ void menu_refresh() {
   }
 
   display_clear();
-  next_idx = root.menu_idx + 1;
+  next_idx = current->menu_idx + 1;
   next_next_idx = next_idx + 1;
 
-  display_text(root.items[root.menu_idx].name, 0, true);
+  display_text(current->items[current->menu_idx].name, 0, true);
   if (next_idx < MAX_MENU_ITEMS) {
-    display_text(root.items[next_idx].name, 1, false);
+    display_text(current->items[next_idx].name, 1, false);
   }
   if (next_next_idx < MAX_MENU_ITEMS) {
-    display_text(root.items[next_next_idx].name, 2, false);
+    display_text(current->items[next_next_idx].name, 2, false);
   }
   
 }
 
 void menu_select() {
-  debug_print(root.items[root.menu_idx].name);
-  switch (root.items[root.menu_idx].tag) {
+  debug_print(current->items[current->menu_idx].name);
+  switch (current->items[current->menu_idx].tag) {
     case menu_tag_waveform:
+      current = &waveforms;
+      waveforms.menu_idx = 0;
+      menu_refresh();
     break;
     case menu_tag_waveform_new:
       gmode_switch(GMODE_CUSTOM_POTSYNC);
@@ -105,6 +115,26 @@ void menu_select() {
       return;
     break;
     case menu_tag_enveloppe:
+    break;
+    case menu_tag_waveform_sin:
+      gsynth_select_wave(WAVE_SIN);
+      menu_flip();
+    break;
+    case menu_tag_waveform_triangle:
+      gsynth_select_wave(WAVE_TRIANGLE);
+      menu_flip();
+    break;
+    case menu_tag_waveform_square:
+      gsynth_select_wave(WAVE_SQUARE);
+      menu_flip();
+    break;
+    case menu_tag_waveform_saw:
+      gsynth_select_wave(WAVE_SAW);
+      menu_flip();
+    break;
+    case menu_tag_waveform_custom1:
+      gsynth_select_wave(WAVE_CUSTOM);
+      menu_flip();
     break;
   }
 }
@@ -116,9 +146,9 @@ void menu_pot(int value) {
   }
   // (512 -> MAX_ITEMS)
   int new_idx = value * (float)(MAX_MENU_ITEMS) / 512.0;
-  if (new_idx == root.menu_idx) {
+  if (new_idx == current->menu_idx) {
     return;
   }
-  root.menu_idx = new_idx;
+  current->menu_idx = new_idx;
   menu_refresh();
 }
