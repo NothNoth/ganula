@@ -177,24 +177,20 @@ void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample) 
   display.display();
 }
 
-void display_rec_countdown() {
-  display.clearDisplay();
-  display.setCursor(5,1);
-  display.setTextSize(3);
-  display.setTextColor(BLACK, WHITE);
-
-  display.print("3");
-  delay(1000);
+void display_clear() {
   display.clearDisplay();
   display.display();
+}
 
-  display.print("2");
-  delay(1000);
-  display.clearDisplay();
-  display.display();
+void display_text(char *text, int line, bool highlight) {
 
-  display.print("1");
-  delay(1000);
-  display.clearDisplay();
+  display.setCursor(1, line*12);
+  display.setTextSize(1);
+  if (highlight) {
+    display.setTextColor(BLACK, WHITE);
+  } else {
+    display.setTextColor(WHITE, BLACK);
+  }
+  display.print(text);
   display.display();
 }

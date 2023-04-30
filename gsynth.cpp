@@ -49,14 +49,6 @@ void gsynth_setup() {
 
   init_buffers();
   generate_sample();
-
-  char dbg[32];
-  sprintf(dbg, "BufferA : %08x\n", voice.sampleA);
-  debug_print(dbg);
-  sprintf(dbg, "BufferB : %08x\n", voice.sampleB);
-  debug_print(dbg);
-
-  flip_count = 0;
 }
 
 void gsynth_enable(bool run) {

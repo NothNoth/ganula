@@ -5,6 +5,7 @@
 #include <DueTimer.h>
 #include "midi.h"
 #include "gsynth.h"
+#include "menu.h"
 
 
 
@@ -47,6 +48,9 @@ void setup() {
   controls_register_bt1_cb(bt1_pressed);
   controls_register_bt2_cb(bt2_pressed);
 
+  //Menu
+  menu_setup();
+
   //Setup synth
   gsynth_setup();
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
@@ -57,6 +61,8 @@ void loop() {
   controls_loop();
   display_loop();
   midi_loop();
+  menu_loop();
+
 
   if (mode == GMODE_CUSTOM_REC) {
     if (millis() - custom_rec_ts > 120) {
@@ -118,8 +124,9 @@ void gmode_switch(gmode_t new_mode) {
 
 
 void pot_changed(int value) {
+  menu_pot(value);
+  /*
   last_pot_value = value;
-
   switch (mode) {
     case GMODE_CUSTOM_POTSYNC:
       if (abs(value - POT_RANGE/2.0) < 5) { //Done !
@@ -132,15 +139,19 @@ void pot_changed(int value) {
       //display_rec(custom_rec_idx, value, customrecsample);
     break;
   }
+  */
 }
 
 
 void bt1_pressed(int unused) {
-  gsynth_nextwave();
+  menu_flip();
+  //gsynth_nextwave();
 }
 
 void bt2_pressed(int unused) {
 
+  menu_select();
+/**
   switch (mode) {
     case GMODE_RUN:
       gmode_switch(GMODE_CUSTOM_POTSYNC);
@@ -152,4 +163,5 @@ void bt2_pressed(int unused) {
       gmode_switch(GMODE_RUN);
     break;
   }
+  */
 }
