@@ -118,12 +118,9 @@ void dacoutput() {
 }
 
 void generate_sample() {
-  unsigned int previous_last_value;
   if (!gsynth_running) {
     return;
   }
-
-  previous_last_value = voice.current[(*voice.current_size)-1];
 
   //No sample played
   if (voice.wave_frequency == 0) {
@@ -205,4 +202,21 @@ void gsynth_save_custom(unsigned char *customrec, int len) {
   custom_wave_size = len;
   wave_form = WAVE_CUSTOM;
   voice.wave_frequency = 100;
+}
+
+
+wave_t gsynth_getwaveforms(int idx) {
+  if (idx >= int(WAVE_MAX)) {
+    return WAVE_MAX;
+  }
+
+  return wave_t(idx);
+}
+
+void gsynth_select_wave(wave_t w) {
+  if (w >= WAVE_MAX) {
+    return;
+  }
+  wave_form = w;
+  generate_sample();
 }

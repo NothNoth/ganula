@@ -21,4 +21,6 @@ void note_off(int channel, int pitch, int velocity);
 void gsynth_save_custom(unsigned char *customrec, int len);
 
 
+void gsynth_select_wave(wave_t w);
+
 #endif
