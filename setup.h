@@ -14,6 +14,8 @@
 //If playing a 20Hz tone at given SAMPLE RATE we would need a buffer of that size
 #define MAX_SAMPLE_SIZE (SAMPLE_RATE/20)
 
+//Maximum DAC output value
+#define MAX_DAC 255
 
 
 //Potentiometer read value range

@@ -32,7 +32,7 @@ unsigned int tone_generate_saw(unsigned char*buffer, unsigned short frequency) {
   }
 
   memset(buffer, 0x00, sample_size);
-  float increment = 255.0/(float)sample_size;
+  float increment = (float)(MAX_DAC)/(float)sample_size;
   for (i = 0; i < sample_size; i++) {
     buffer[i] = (unsigned char)((float)(i)*increment);
   }
@@ -52,12 +52,12 @@ unsigned int tone_generate_triangle(unsigned char*buffer, unsigned short frequen
   }
 
   memset(buffer, 0x00, sample_size);
-  float increment = 2*255.0/(float)sample_size;
+  float increment = 2*(float)(MAX_DAC)/(float)sample_size;
   for (i = 0; i < sample_size/2; i++) {
     buffer[i] = (unsigned char)((float)(i)*increment);
   }
   for (i = 0; i < sample_size/2; i++) {
-    buffer[i + sample_size/2] = (unsigned char)(255.0 - (float)(i)*increment);
+    buffer[i + sample_size/2] = (unsigned char)((float)(MAX_DAC) - (float)(i)*increment);
   }
   return sample_size;
 }
@@ -74,7 +74,7 @@ unsigned int tone_generate_sin(unsigned char*buffer, unsigned short frequency) {
 
   memset(buffer, 0x00, sample_size);
   for (i = 0; i < sample_size; i++) {
-    buffer[i] = sin(i*2*3.1416/sample_size) * 128 + 128;//scale and center
+    buffer[i] = sin(i*2*3.1416/sample_size) * MAX_DAC/2 + MAX_DAC/2;//scale and center
   }
 
   return sample_size;
