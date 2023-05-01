@@ -77,8 +77,8 @@ void loop() {
         potpos = last_pot_value - 128;
       }
       
-      display_rec(custom_rec_idx, potpos, customrecsample);
-      customrecsample[custom_rec_idx] = potpos;
+      display_rec(custom_rec_idx, POT_RANGE - potpos, customrecsample);
+      customrecsample[custom_rec_idx] = POT_RANGE - potpos;
       custom_rec_ts = millis();
 
       //Done

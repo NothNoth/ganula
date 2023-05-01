@@ -7,7 +7,7 @@
 
 bool menu_shown;
 
-#define MAX_MENU_ITEMS 4
+#define MAX_MENU_ITEMS 5
 typedef enum {
   menu_tag_waveform = 0,
   menu_tag_waveform_new = 1,
