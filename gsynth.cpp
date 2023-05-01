@@ -103,7 +103,7 @@ void dacoutput() {
   for (i = 0; i < MAX_VOICES; i++) {  
 
     //Voice is off?  
-    if (voices[i].current_size == 0) {
+    if ((voices[i].wave_frequency) == 0) {
       continue;
     }
     voices_playing ++;
@@ -120,7 +120,7 @@ void dacoutput() {
     }
   }
 
-  //No buffer? Just output 0
+  //No voices playing? Just output 0
   if (voices_playing == 0) {
     analogWrite(AUDIO_PIN, 0);
     return;
@@ -136,7 +136,7 @@ void generate_sample(int voice_idx, int wave_frequency) {
 
   //Voice if off
   if (wave_frequency == 0) {
-    *voices[voice_idx].next_size = 0;
+    (*voices[voice_idx].next_size) = 0;
     voices[voice_idx].flip_buffers = true;
     display_nosample();
     return;

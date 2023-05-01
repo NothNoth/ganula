@@ -109,7 +109,7 @@ void gmode_switch(gmode_t new_mode) {
     case GMODE_CUSTOM_REC:
       custom_rec_idx = 0;
       custom_rec_ts = millis();
-      memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE);
+      memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE*sizeof(unsigned short));
       display_rec(custom_rec_idx, last_pot_value, customrecsample);
     break;
   }
