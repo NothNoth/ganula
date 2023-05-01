@@ -38,7 +38,6 @@ unsigned int custom_wave_size;
 wave_t wave_form;
 bool gsynth_running = true;
 voice_buffer_t voices[MAX_VOICES];
-int flip_count;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
@@ -92,7 +91,6 @@ void flip_buffers(int voice_idx) {
   voices[voice_idx].next_size = tmp_size;
 
   voices[voice_idx].flip_buffers = false;
-  flip_count++;
 }
 
 void dacoutput() {
