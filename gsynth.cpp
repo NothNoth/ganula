@@ -169,7 +169,6 @@ void generate_sample() {
   voice.flip_buffers = true;
 }
 
-
 void note_on(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
@@ -182,7 +181,6 @@ void note_on(int channel, int pitch, int velocity) {
   generate_sample();
 }
 
-
 void note_off(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
@@ -191,11 +189,9 @@ void note_off(int channel, int pitch, int velocity) {
   generate_sample();
 }
 
-
 int pitchToFrequency(int pitch) {
   return int(440.0 * pow(2.0, (pitch - 69.0) / 12.0));
 }
-
 
 void gsynth_save_custom(unsigned char *customrec, int len) {
   memcpy(custom_wave, customrec, len>MAX_SAMPLE_SIZE?MAX_SAMPLE_SIZE:len);
@@ -203,7 +199,6 @@ void gsynth_save_custom(unsigned char *customrec, int len) {
   wave_form = WAVE_CUSTOM;
   voice.wave_frequency = 100;
 }
-
 
 wave_t gsynth_getwaveforms(int idx) {
   if (idx >= int(WAVE_MAX)) {

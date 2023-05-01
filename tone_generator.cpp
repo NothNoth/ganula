@@ -1,19 +1,10 @@
 #include "tone_generator.h"
 #include "setup.h"
 #include "ntm.h"
-/*
 
-  TODO:
-
-    - No-click:
-    
-    Fetch the last value of the current buffer and the first value of the new
-    Create a one show buffer making a proper transition between the two
-    
+void extrapolate(unsigned char *src, int src_size, unsigned char *dest, int dest_size);
 
 
-
-*/
 unsigned int tone_generate_square(unsigned char*buffer, unsigned short frequency) {
   int i;
 
@@ -89,47 +80,6 @@ unsigned int tone_generate_sin(unsigned char*buffer, unsigned short frequency) {
   return sample_size;
 }
 
-
-void tone_dump(unsigned char*buffer, unsigned short len) {
-  int i;
-  for (i = 0; i < len; i++) {
-    debug_print(buffer[i]);
-  }
-}
-
-
-
-void extrapolate(unsigned char *src, int src_size, unsigned char *dest, int dest_size) {
-  int i;
-
-  memset(dest, 0x00, dest_size);
-
-  if (dest_size > src_size) {
-    float scale = dest_size/src_size;
-
-    for (int i = 0; i < src_size; i++) {
-      int idx = i*scale;
-      for (int j = 0; j < scale; j++) {
-        dest[idx+j] = src[i];
-      }
-    }
-  } else {
-    float scale = (float)src_size/(float)dest_size;
-    for (i = 0; i < dest_size; i++) {
-      printf("%f * %d\n", scale, i);
-      int start_idx = (int)(scale * i);
-      int end_idx = (int)(scale * (i+1));
-      int tot = 0;
-      for (int j = start_idx; j < end_idx; j++) {
-        tot += src[j];
-      }
-      printf("from to %d %d = %d\n", start_idx, end_idx, tot);
-      dest[i] = tot/(end_idx - start_idx);
-    }
-  }
-}
-
-
 unsigned int tone_generate_custom(unsigned char*buffer, unsigned char*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
   int i;
 
@@ -148,4 +98,42 @@ unsigned int tone_generate_custom(unsigned char*buffer, unsigned char*custom_wav
   extrapolate(custom_wave, custom_wave_size, buffer, sample_size);
 
   return sample_size;
+}
+
+void extrapolate(unsigned char *src, int src_size, unsigned char *dest, int dest_size) {
+  int i;
+
+  memset(dest, 0x00, dest_size);
+
+  if (dest_size > src_size) {
+    float scale = dest_size/src_size;
+
+    for (int i = 0; i < src_size; i++) {
+      int idx = i*scale;
+      for (int j = 0; j < scale; j++) {
+        dest[idx+j] = src[i];
+      }
+    }
+  } else {
+    float scale = (float)src_size/(float)dest_size;
+    for (i = 0; i < dest_size; i++) {
+      int idx = (int)(scale * (float)(i));
+      dest[i] = src[idx];
+    }
+/*
+    float scale = (float)src_size/(float)dest_size;
+    for (i = 0; i < dest_size; i++) {
+      int start_idx = (int)(scale * (float)(i));
+      int end_idx = (int)(scale * (float)(i+1));
+      int tot = 0;
+      for (int j = start_idx; j < end_idx; j++) {
+        tot += src[j];
+      }
+      char plop[64];
+      sprintf(plop, "%d: %d->%d / tot %d value: %d\n", i, start_idx, end_idx, tot, (int)((float)(tot)/(float)(end_idx - start_idx)));
+      debug_print(plop);
+      dest[i] = (int)((float)(tot)/(float)(end_idx - start_idx));
+    }
+    */
+  }
 }
