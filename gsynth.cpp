@@ -16,17 +16,17 @@ typedef struct {
   unsigned int wave_frequency;
 
   bool flip_buffers;
-  unsigned char * current;
+  unsigned short * current;
   unsigned int * current_size;
-  unsigned char * next;
+  unsigned short * next;
   unsigned int * next_size;
 
   unsigned int sample_idx;
 
-  unsigned char sampleA[MAX_SAMPLE_SIZE];
+  unsigned short sampleA[MAX_SAMPLE_SIZE];
   unsigned int sampleA_size;
 
-  unsigned char sampleB[MAX_SAMPLE_SIZE];
+  unsigned short sampleB[MAX_SAMPLE_SIZE];
   unsigned int sampleB_size;
 } voice_buffer_t;
 
@@ -44,24 +44,21 @@ void generate_sample();
 void init_buffers();
 
 void gsynth_setup() {
+  analogWriteResolution(12);
   wave_form = WAVE_SQUARE;
   memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
   gsynth_running = true;
 
   init_buffers();
-  //generate_sample();
 }
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
   init_buffers();
-
-  //generate_sample();
 }
 
 void gsynth_nextwave() {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
-  //generate_sample();
 }
 
 void init_buffers() {
@@ -81,7 +78,7 @@ void init_buffers() {
 
 
 void flip_buffers(int voice_idx) {
-  unsigned char * tmp = voices[voice_idx].current;
+  unsigned short * tmp = voices[voice_idx].current;
   unsigned int * tmp_size = voices[voice_idx].current_size;
 
   voices[voice_idx].current = voices[voice_idx].next;

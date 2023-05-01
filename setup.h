@@ -15,7 +15,7 @@
 #define MAX_SAMPLE_SIZE (SAMPLE_RATE/20)
 
 //Maximum DAC output value
-#define MAX_DAC 255
+#define MAX_DAC 4096
 
 
 //Potentiometer read value range

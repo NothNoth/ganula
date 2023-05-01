@@ -2,108 +2,109 @@
 #include "setup.h"
 #include "ntm.h"
 
-void extrapolate(unsigned char *src, int src_size, unsigned char *dest, int dest_size);
+void extrapolate(unsigned char *src, int src_size, unsigned short *dest, int dest_size);
 
 
-unsigned int tone_generate_square(unsigned char*buffer, unsigned short frequency) {
+unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequency) {
   int i;
 
-  //Since we're playing at given sample rate, we will be using sample_size space on the buffer
-  unsigned int sample_size = SAMPLE_RATE / frequency;
-  if (sample_size > MAX_SAMPLE_SIZE) {
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
     debug_print("sample buffer seems to small");
     return 0;
   }
 
-  memset(buffer, 0x00, sample_size/2);
-  memset(buffer+sample_size/2, 0xFF, sample_size/2);
-  return sample_size;
+  int half = (sample_count/2) * sizeof(short);
+
+  memset(buffer, 0x00, half);
+  memset(buffer+half, 0xFF, half);
+  return sample_count;
 }
 
 
-unsigned int tone_generate_saw(unsigned char*buffer, unsigned short frequency) {
+unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) {
   int i;
 
-  //Since we're playing at given sample rate, we will be using sample_size space on the buffer
-  unsigned int sample_size = SAMPLE_RATE / frequency;
-  if (sample_size > MAX_SAMPLE_SIZE) {
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
     debug_print("sample buffer seems to small");
     return 0;
   }
 
-  memset(buffer, 0x00, sample_size);
-  float increment = (float)(MAX_DAC)/(float)sample_size;
-  for (i = 0; i < sample_size; i++) {
-    buffer[i] = (unsigned char)((float)(i)*increment);
+  memset(buffer, 0x00, sample_count * sizeof(short));
+  float increment = (float)(MAX_DAC)/(float)sample_count;
+  for (i = 0; i < sample_count; i++) {
+    buffer[i] = (unsigned short)((float)(i)*increment);
   }
 
-  return sample_size;
+  return sample_count;
 }
 
 
-unsigned int tone_generate_triangle(unsigned char*buffer, unsigned short frequency) {
+unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short frequency) {
   int i;
 
-  //Since we're playing at given sample rate, we will be using sample_size space on the buffer
-  unsigned int sample_size = SAMPLE_RATE / frequency;
-  if (sample_size > MAX_SAMPLE_SIZE) {
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
     debug_print("sample buffer seems to small");
     return 0;
   }
 
-  memset(buffer, 0x00, sample_size);
-  float increment = 2*(float)(MAX_DAC)/(float)sample_size;
-  for (i = 0; i < sample_size/2; i++) {
-    buffer[i] = (unsigned char)((float)(i)*increment);
+  memset(buffer, 0x00, sample_count * sizeof(short));
+  float increment = 2*(float)(MAX_DAC)/(float)sample_count;
+  for (i = 0; i < sample_count/2; i++) {
+    buffer[i] = (unsigned short)((float)(i)*increment);
   }
-  for (i = 0; i < sample_size/2; i++) {
-    buffer[i + sample_size/2] = (unsigned char)((float)(MAX_DAC) - (float)(i)*increment);
+  for (i = 0; i < sample_count/2; i++) {
+    buffer[i + sample_count/2] = (unsigned short)((float)(MAX_DAC) - (float)(i)*increment);
   }
-  return sample_size;
+  return sample_count;
 }
 
-unsigned int tone_generate_sin(unsigned char*buffer, unsigned short frequency) {
+unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) {
   int i;
 
-  //Since we're playing at given sample rate, we will be using sample_size space on the buffer
-  unsigned int sample_size = SAMPLE_RATE / frequency;
-  if (sample_size > MAX_SAMPLE_SIZE) {
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
     debug_print("sample buffer seems to small");
     return 0;
   }
 
-  memset(buffer, 0x00, sample_size);
-  for (i = 0; i < sample_size; i++) {
-    buffer[i] = sin(i*2*3.1416/sample_size) * MAX_DAC/2 + MAX_DAC/2;//scale and center
+  memset(buffer, 0x00, sample_count*sizeof(short));
+  for (i = 0; i < sample_count; i++) {
+    buffer[i] = sin(i*2*3.1416/sample_count) * MAX_DAC/2 + MAX_DAC/2;//scale and center
   }
 
-  return sample_size;
+  return sample_count;
 }
 
-unsigned int tone_generate_custom(unsigned char*buffer, unsigned char*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
+unsigned int tone_generate_custom(unsigned short*buffer, unsigned char*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
   int i;
 
-  //Since we're playing at given sample rate, we will be using sample_size space on the buffer
-  unsigned int sample_size = SAMPLE_RATE / frequency;
-  if (sample_size > MAX_SAMPLE_SIZE) {
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
     debug_print("sample buffer seems to small");
     return 0;
   }
 
-  memset(buffer, 0x00, sample_size);
+  memset(buffer, 0x00, sample_count*sizeof(short));
 
   //Now map custom_wave of size custom_wave_size
-  // to buffer of size sample_size
+  // to buffer of size sample_count
+  extrapolate(custom_wave, custom_wave_size, buffer, sample_count);
 
-  extrapolate(custom_wave, custom_wave_size, buffer, sample_size);
-
-  return sample_size;
+  return sample_count;
 }
 
-void extrapolate(unsigned char *src, int src_size, unsigned char *dest, int dest_size) {
+void extrapolate(unsigned char *src, int src_size, unsigned short *dest, int dest_size) {
   int i;
 
-  memset(dest, 0x00, dest_size);
+  memset(dest, 0x00, dest_size*sizeof(short));
 
   if (dest_size > src_size) {
     float scale = dest_size/src_size;
