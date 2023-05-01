@@ -110,7 +110,7 @@ void display_potsync(int potpos) {
   display.display();
 }
 
-void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample) {
+void display_rec(int rec_bar, unsigned short potvalue, unsigned short *recsample) {
   int x, y;
   int xlmargin = 10;
   int xrmargin = 117;
@@ -140,7 +140,9 @@ void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample) 
   }
 
   //Print pot position
-  int crosspos = potvalue * 32/255.0;
+  // MAX_DAC -> 32
+  // potvalue
+  int crosspos = potvalue * 32/(float)MAX_DAC;
 
   display.drawPixel(rec_bar-1, crosspos-1, WHITE);
   display.drawPixel(rec_bar-1, crosspos, WHITE);
@@ -155,8 +157,9 @@ void display_rec(int rec_bar, unsigned char potvalue, unsigned char *recsample) 
   display.drawPixel(rec_bar, crosspos+1, WHITE);
 
   //Print past
-  for (x = xlmargin; x < rec_bar; x++) {
-    display.drawPixel(x, recsample[x]*32/255.0, WHITE);
+  int ends = rec_bar<xrmargin?rec_bar:xrmargin;
+  for (x = xlmargin; x < ends; x++) {
+    display.drawPixel(x, recsample[x]*32/(float)MAX_DAC, WHITE);
      //TODO: fill right margin with early data to help for smooth transitions
   }
 

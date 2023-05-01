@@ -20,9 +20,11 @@ gmode_t mode;
 int last_pot_value;
 
 #define CUSTOM_REC_SAMPLE_SIZE 128
+#define CUSTOM_REC_SAMPLE_POINT_MS 120
+#define CUSTOM_REC_SAMPLE_POT_MARGIN 128
 int custom_rec_idx;
 int custom_rec_ts;
-unsigned char customrecsample[CUSTOM_REC_SAMPLE_SIZE];
+unsigned short customrecsample[CUSTOM_REC_SAMPLE_SIZE];
 
 void setup() {
   last_pot_value = 0;
@@ -65,20 +67,13 @@ void loop() {
 
 
   if (mode == GMODE_CUSTOM_REC) {
-    if (millis() - custom_rec_ts > 120) {
+    if (millis() - custom_rec_ts > CUSTOM_REC_SAMPLE_POINT_MS) {
       custom_rec_idx++;
 
-      unsigned char potpos;
-      if (last_pot_value < 128) {
-        potpos = 0;
-      } else if (last_pot_value > 384) {
-        potpos = 255;
-      } else {
-        potpos = last_pot_value - 128;
-      }
-      
-      display_rec(custom_rec_idx, POT_RANGE - potpos, customrecsample);
-      customrecsample[custom_rec_idx] = POT_RANGE - potpos;
+      int fact = MAX_DAC / POT_RANGE;
+      int pot_value = (POT_RANGE - last_pot_value)*fact;
+      display_rec(custom_rec_idx, pot_value, customrecsample);
+      customrecsample[custom_rec_idx] = pot_value;
       custom_rec_ts = millis();
 
       //Done

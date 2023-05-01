@@ -2,7 +2,7 @@
 #include "setup.h"
 #include "ntm.h"
 
-void extrapolate(unsigned char *src, int src_size, unsigned short *dest, int dest_size);
+void extrapolate(unsigned short *src, int src_size, unsigned short *dest, int dest_size);
 
 
 unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequency) {
@@ -82,7 +82,7 @@ unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) 
   return sample_count;
 }
 
-unsigned int tone_generate_custom(unsigned short*buffer, unsigned char*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
+unsigned int tone_generate_custom(unsigned short*buffer, unsigned short*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -101,7 +101,7 @@ unsigned int tone_generate_custom(unsigned short*buffer, unsigned char*custom_wa
   return sample_count;
 }
 
-void extrapolate(unsigned char *src, int src_size, unsigned short *dest, int dest_size) {
+void extrapolate(unsigned short *src, int src_size, unsigned short *dest, int dest_size) {
   int i;
 
   memset(dest, 0x00, dest_size*sizeof(short));

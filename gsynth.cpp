@@ -30,7 +30,7 @@ typedef struct {
   unsigned int sampleB_size;
 } voice_buffer_t;
 
-unsigned char custom_wave[MAX_SAMPLE_SIZE];
+unsigned short custom_wave[MAX_SAMPLE_SIZE];
 unsigned int custom_wave_size;
 
 #define MAX_VOICES 8
@@ -230,8 +230,8 @@ int pitchToFrequency(int pitch) {
   return int(440.0 * pow(2.0, (pitch - 69.0) / 12.0));
 }
 
-void gsynth_save_custom(unsigned char *customrec, int len) {
-  memcpy(custom_wave, customrec, len>MAX_SAMPLE_SIZE?MAX_SAMPLE_SIZE:len);
+void gsynth_save_custom(unsigned short *customrec, int len) {
+  memcpy(custom_wave, customrec, (len>MAX_SAMPLE_SIZE?MAX_SAMPLE_SIZE:len)*sizeof(short));
   custom_wave_size = len;
   wave_form = WAVE_CUSTOM;
 }

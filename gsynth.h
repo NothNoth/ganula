@@ -18,7 +18,7 @@ void gsynth_nextwave();
 void dacoutput();
 void note_on(int channel, int pitch, int velocity);
 void note_off(int channel, int pitch, int velocity);
-void gsynth_save_custom(unsigned char *customrec, int len);
+void gsynth_save_custom(unsigned short *customrec, int len);
 
 
 void gsynth_select_wave(wave_t w);
