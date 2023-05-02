@@ -14,8 +14,7 @@ unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequenc
     debug_print("sample buffer seems to small");
     return 0;
   }
-
-  int half = (sample_count/2) * sizeof(short);
+  int half = (int)(sample_count/2.0) * sizeof(short);
 
   memset(buffer, 0x00, half);
   memset(buffer+half, 0xFF, half);

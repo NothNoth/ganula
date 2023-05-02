@@ -50,6 +50,7 @@ void gsynth_setup() {
   gsynth_running = true;
 
   init_buffers();
+  gsynth_select_wave(WAVE_SIN);
 }
 
 void gsynth_enable(bool run) {
@@ -130,6 +131,11 @@ void dacoutput() {
 
 void generate_sample(int voice_idx, int wave_frequency) {
   if (!gsynth_running) {
+    debug_print("Won't generate sample: not running");
+    return;
+  }
+  if (voice_idx >= MAX_VOICES) {
+    debug_print("Won't generate sample: invalid voice idx");
     return;
   }
   voices[voice_idx].wave_frequency = wave_frequency;
@@ -138,6 +144,9 @@ void generate_sample(int voice_idx, int wave_frequency) {
   if (wave_frequency == 0) {
     (*voices[voice_idx].next_size) = 0;
     voices[voice_idx].flip_buffers = true;
+    char dbg[64];
+    sprintf(dbg, "Turning voice %d off.", voice_idx);
+    debug_print(dbg);
     display_nosample();
     return;
   }
