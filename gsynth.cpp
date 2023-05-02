@@ -23,17 +23,15 @@ typedef struct {
 
   bool flip_buffers;
   unsigned short * current;
-  unsigned int * current_size;
+  unsigned int  current_size;
   unsigned short * next;
-  unsigned int * next_size;
+  unsigned int  next_size;
 
   unsigned int sample_idx;
 
   unsigned short sampleA[MAX_SAMPLE_SIZE];
-  unsigned int sampleA_size;
 
   unsigned short sampleB[MAX_SAMPLE_SIZE];
-  unsigned int sampleB_size;
 } voice_buffer_t;
 
 unsigned short custom_wave[MAX_SAMPLE_SIZE];
@@ -74,10 +72,10 @@ void init_buffers() {
   for (int i = 0; i < MAX_VOICES; i++) {
   //By default current points to A
     voices[i].current = voices[i].sampleA;
-    voices[i].current_size = &voices[i].sampleA_size;
+    voices[i].current_size = 0;
   //And next to B
     voices[i].next = voices[i].sampleB;
-    voices[i].next_size = &voices[i].sampleB_size;
+    voices[i].next_size = 0;
 
     voices[i].flip_buffers = false;
   }
@@ -86,13 +84,12 @@ void init_buffers() {
 
 void flip_buffers(int voice_idx) {
   unsigned short * tmp = voices[voice_idx].current;
-  unsigned int * tmp_size = voices[voice_idx].current_size;
 
   voices[voice_idx].current = voices[voice_idx].next;
   voices[voice_idx].current_size = voices[voice_idx].next_size;
 
   voices[voice_idx].next = tmp;
-  voices[voice_idx].next_size = tmp_size;
+  voices[voice_idx].next_size = 0;
 
   voices[voice_idx].flip_buffers = false;
 }
@@ -111,16 +108,21 @@ void dacoutput() {
   for (i = 0; i < MAX_VOICES; i++) {  
 
     //Voice is off?  
-    if ((voices[i].wave_frequency) == 0) { //FIXME use *voices[i].current_size instead
-      continue;
+    if ((voices[i].current_size) == 0) {
+      if (voices[i].flip_buffers == false) {
+        continue;
+      }
+      //Not playing but buffer flip requested
+      flip_buffers(i);
     }
+  
     voices_playing ++;
     merge += voices[i].current[voices[i].sample_idx];
     voices[i].sample_idx++;
-  sprintf(dacdbg, "DAC voice %d play idx %d", i, voices[i].sample_idx);
+  //sprintf(dacdbg, "DAC voice %d play idx %d", i, voices[i].sample_idx);
 
     //Reach end of buffer
-    if (voices[i].sample_idx >= (*voices[i].current_size)) {
+    if (voices[i].sample_idx >= voices[i].current_size) {
       voices[i].sample_idx = 0; //restart
 
       if (voices[i].flip_buffers == true) { //Eventually flip buffers for a new sample
@@ -150,12 +152,12 @@ void generate_sample(int voice_idx, int wave_frequency) {
 
   //Voice if off
   if (wave_frequency == 0) {
-    (*voices[voice_idx].next_size) = 0;
+    voices[voice_idx].next_size = 0;
     voices[voice_idx].flip_buffers = true;
     //char dbg[64];
     //snprintf(dbg, 64, "Turning voice %d off.", voice_idx);
     //debug_print(dbg);
-    display_nosample();
+    //display_nosample();
     return;
   }
 
@@ -164,31 +166,31 @@ void generate_sample(int voice_idx, int wave_frequency) {
   switch (wave_form) {
     case WAVE_SQUARE:
     {
-      *voices[voice_idx].next_size = tone_generate_square(voices[voice_idx].next, voices[voice_idx].wave_frequency);
+      voices[voice_idx].next_size = tone_generate_square(voices[voice_idx].next, voices[voice_idx].wave_frequency);
       debug_print("Switch to square.");
     }
     break;
     case WAVE_SAW:
     {
-      *voices[voice_idx].next_size = tone_generate_saw(voices[voice_idx].next, voices[voice_idx].wave_frequency);
+      voices[voice_idx].next_size = tone_generate_saw(voices[voice_idx].next, voices[voice_idx].wave_frequency);
       debug_print("Switch to saw.");
     }
     break;
     case WAVE_SIN:
     {
-      *voices[voice_idx].next_size = tone_generate_sin(voices[voice_idx].next, voices[voice_idx].wave_frequency);
+      voices[voice_idx].next_size = tone_generate_sin(voices[voice_idx].next, voices[voice_idx].wave_frequency);
       debug_print("Switch to sin.");
     }
     break;
     case WAVE_TRIANGLE:
     {
-      *voices[voice_idx].next_size = tone_generate_triangle(voices[voice_idx].next, voices[voice_idx].wave_frequency);
+      voices[voice_idx].next_size = tone_generate_triangle(voices[voice_idx].next, voices[voice_idx].wave_frequency);
       debug_print("Switch to triangle.");
     }
     break;
     case WAVE_CUSTOM:
     {
-      *voices[voice_idx].next_size = tone_generate_custom(voices[voice_idx].next, custom_wave, custom_wave_size, voices[voice_idx].wave_frequency);
+      voices[voice_idx].next_size = tone_generate_custom(voices[voice_idx].next, custom_wave, custom_wave_size, voices[voice_idx].wave_frequency);
       debug_print("Switch to Custom.");
     }
     break;
@@ -196,7 +198,7 @@ void generate_sample(int voice_idx, int wave_frequency) {
     break;
   }
 
-  display_sample(voices[voice_idx].next, *voices[voice_idx].next_size, voices[voice_idx].wave_frequency);
+  //display_sample(voices[voice_idx].next, *voices[voice_idx].next_size, voices[voice_idx].wave_frequency);
   voices[voice_idx].flip_buffers = true;
 }
 
