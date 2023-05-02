@@ -1,6 +1,10 @@
 #include "tone_generator.h"
 #include "setup.h"
-#include "ntm.h"
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 #include <math.h>
 #include <string.h>
 

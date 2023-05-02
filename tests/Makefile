@@ -1,2 +1,2 @@
 all:
-	gcc -g -D_GRANULA_TESTS_ granula_tests.cpp ../tone_generator.cpp -I./ -o granula_tests
+	gcc -g -D_GRANULA_TESTS_ -I./ granula_tests.cpp ../tone_generator.cpp -I./ -lm -o granula_tests

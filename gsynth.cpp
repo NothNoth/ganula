@@ -1,10 +1,14 @@
 #include "gsynth.h"
 #include "setup.h"
 #include "tone_generator.h"
-#include "Arduino.h"
-#include "display.h"
-#include "ntm.h"
 
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "Arduino.h"
+  #include "display.h"
+  #include "ntm.h"
+#endif
 
 
 typedef enum {

@@ -4,6 +4,6 @@
 
 
 #define debug_setup(_BPS_) 
-#define debug_print(_S_) printf(_S_)
+#define debug_print(_S_) printf(_S_); printf("\n")
 
 #endif

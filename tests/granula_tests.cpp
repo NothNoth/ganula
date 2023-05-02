@@ -1,14 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "ntm.h"
+#include "granula_tests_stubs.h"
 #include "../tone_generator.h"
 #include "../setup.h"
 
 
 #define FAIL(_str) { perror(_str); exit(-1);}
 
+void test_tone_generator();
+
 int main(int argc, char*argv[]) {
   printf("Granula - Tests\n");
+
+  return 0;
+}
+
+void test_tone_generator() {
 
   unsigned short buffer[MAX_SAMPLE_SIZE];
 
@@ -68,5 +75,4 @@ int main(int argc, char*argv[]) {
     }
   }
 
-  return 0;
 }
