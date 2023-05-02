@@ -1,6 +1,8 @@
 #include "gsynth.h"
 #include "setup.h"
 #include "tone_generator.h"
+#include <string.h>
+#include <math.h>
 
 #ifdef _GRANULA_TESTS_
   #include "granula_tests_stubs.h"
@@ -149,7 +151,7 @@ void generate_sample(int voice_idx, int wave_frequency) {
     (*voices[voice_idx].next_size) = 0;
     voices[voice_idx].flip_buffers = true;
     char dbg[64];
-    sprintf(dbg, "Turning voice %d off.", voice_idx);
+    snprintf(dbg, 64, "Turning voice %d off.", voice_idx);
     debug_print(dbg);
     display_nosample();
     return;
@@ -235,8 +237,6 @@ void note_off(int channel, int pitch, int velocity) {
 
   }
   debug_print("Note off not found for freq");
-  debug_print(wave_frequency);
-
 }
 
 int pitchToFrequency(int pitch) {

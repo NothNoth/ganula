@@ -3,11 +3,13 @@
 #include "granula_tests_stubs.h"
 #include "../tone_generator.h"
 #include "../setup.h"
+#include "../gsynth.h"
 
 
 #define FAIL(_str) { perror(_str); exit(-1);}
 
 void test_tone_generator();
+void test_gsynth();
 
 int main(int argc, char*argv[]) {
   printf("Granula - Tests\n");
@@ -75,4 +77,11 @@ void test_tone_generator() {
     }
   }
 
+}
+
+
+void test_gsynth() {
+  gsynth_setup();
+  gsynth_enable(true);
+  dacoutput();
 }
