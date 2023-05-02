@@ -96,6 +96,7 @@ void flip_buffers(int voice_idx) {
 
   voices[voice_idx].flip_buffers = false;
 }
+char dacdbg[128];
 
 void dacoutput() {
   int i;
@@ -110,12 +111,13 @@ void dacoutput() {
   for (i = 0; i < MAX_VOICES; i++) {  
 
     //Voice is off?  
-    if ((voices[i].wave_frequency) == 0) {
+    if ((voices[i].wave_frequency) == 0) { //FIXME use *voices[i].current_size instead
       continue;
     }
     voices_playing ++;
     merge += voices[i].current[voices[i].sample_idx];
     voices[i].sample_idx++;
+  sprintf(dacdbg, "DAC voice %d play idx %d", i, voices[i].sample_idx);
 
     //Reach end of buffer
     if (voices[i].sample_idx >= (*voices[i].current_size)) {
@@ -202,6 +204,7 @@ void note_on(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
   }
+  debug_print(dacdbg);
 
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
@@ -209,9 +212,9 @@ void note_on(int channel, int pitch, int velocity) {
   //Find a free voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].wave_frequency == 0) {
-      //char dbg[64];
-      //sprintf(dbg, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
-      //debug_print(dbg);
+      char dbg[64];
+      sprintf(dbg, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
+      debug_print(dbg);
       generate_sample(voice_idx, wave_frequency);
       return;
     }

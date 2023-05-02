@@ -77,8 +77,9 @@ unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) 
   }
 
   memset(buffer, 0x00, sample_count*sizeof(short));
+  int half_range = (int)(MAX_DAC/2.0);
   for (i = 0; i < sample_count; i++) {
-    buffer[i] = sin(i*2*3.1416/sample_count) * MAX_DAC/2 + MAX_DAC/2;//scale and center
+    buffer[i] = sin(i*2*3.1416/sample_count) * half_range + half_range;//scale and center
   }
 
   return sample_count;
