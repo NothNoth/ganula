@@ -13,12 +13,12 @@ void test_gsynth();
 
 int main(int argc, char*argv[]) {
   printf("Granula - Tests\n");
-
+  test_tone_generator();
+  test_gsynth();
   return 0;
 }
 
 void test_tone_generator() {
-
   unsigned short buffer[MAX_SAMPLE_SIZE];
 
   printf("Test: square generation...\n");
@@ -77,11 +77,27 @@ void test_tone_generator() {
     }
   }
 
+  return;
 }
 
 
 void test_gsynth() {
+  printf("Test: gsynth setup...\n");
   gsynth_setup();
   gsynth_enable(true);
-  dacoutput();
+
+  printf("Test: gsynth dacountput...\n");
+  int pitch = 44;
+  gsynth_select_wave(WAVE_SAW);
+  for (int i = 0; i < 100000; i++) {
+    if (!(i%12)) {
+      note_on(1, pitch, 44);
+    }
+
+    if (!(i%17)) {
+      note_off(1, pitch, 0);
+    }
+
+    dacoutput();
+  }
 }

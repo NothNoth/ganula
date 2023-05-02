@@ -6,7 +6,7 @@
 
 
 #define debug_setup(_BPS_) 
-#define debug_print(_S_) printf(_S_); printf("\n")
+#define debug_print(_S_) printf("%s\n", _S_);
 
 #define analogWriteResolution(_resolution)
 #define analogWrite(_port,_value)

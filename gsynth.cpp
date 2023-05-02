@@ -190,6 +190,8 @@ void generate_sample(int voice_idx, int wave_frequency) {
       debug_print("Switch to Custom.");
     }
     break;
+    case WAVE_MAX:
+    break;
   }
 
   display_sample(voices[voice_idx].next, *voices[voice_idx].next_size, voices[voice_idx].wave_frequency);
