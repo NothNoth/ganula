@@ -65,7 +65,7 @@ void menu_setup() {
   strcpy(waveforms.items[2].name, "Triangle");
   waveforms.items[2].tag = menu_tag_waveform_triangle;
   strcpy(waveforms.items[3].name, "Saw     ");
-  waveforms.items[3].tag = menu_tag_waveform_triangle;
+  waveforms.items[3].tag = menu_tag_waveform_saw;
   strcpy(waveforms.items[4].name, "Custom 1");
   waveforms.items[4].tag = menu_tag_waveform_custom1;
 

@@ -42,7 +42,6 @@ unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) 
   for (i = 0; i < sample_count; i++) {
     buffer[i] = (unsigned short)((float)(i)*increment);
   }
-
   return sample_count;
 }
 
