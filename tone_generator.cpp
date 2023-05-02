@@ -1,6 +1,9 @@
 #include "tone_generator.h"
 #include "setup.h"
 #include "ntm.h"
+#include <math.h>
+#include <string.h>
+
 
 void extrapolate(unsigned short *src, int src_size, unsigned short *dest, int dest_size);
 
@@ -11,7 +14,6 @@ unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequenc
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
   unsigned int sample_count = SAMPLE_RATE / frequency;
   if (sample_count > MAX_SAMPLE_SIZE) {
-    debug_print("sample buffer seems to small");
     return 0;
   }
   int half = (int)(sample_count/2.0) * sizeof(short);
@@ -28,7 +30,6 @@ unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
   unsigned int sample_count = SAMPLE_RATE / frequency;
   if (sample_count > MAX_SAMPLE_SIZE) {
-    debug_print("sample buffer seems to small");
     return 0;
   }
 
@@ -48,7 +49,6 @@ unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short freque
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
   unsigned int sample_count = SAMPLE_RATE / frequency;
   if (sample_count > MAX_SAMPLE_SIZE) {
-    debug_print("sample buffer seems to small");
     return 0;
   }
 
@@ -69,7 +69,6 @@ unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
   unsigned int sample_count = SAMPLE_RATE / frequency;
   if (sample_count > MAX_SAMPLE_SIZE) {
-    debug_print("sample buffer seems to small");
     return 0;
   }
 
@@ -87,7 +86,6 @@ unsigned int tone_generate_custom(unsigned short*buffer, unsigned short*custom_w
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
   unsigned int sample_count = SAMPLE_RATE / frequency;
   if (sample_count > MAX_SAMPLE_SIZE) {
-    debug_print("sample buffer seems to small");
     return 0;
   }
 
