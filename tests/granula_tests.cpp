@@ -86,18 +86,16 @@ void test_gsynth() {
   gsynth_setup();
   gsynth_enable(true);
 
-  printf("Test: gsynth dacountput...\n");
+  printf("Test: gsynth dacoutput...\n");
   int pitch = 44;
   gsynth_select_wave(WAVE_SAW);
-  for (int i = 0; i < 100000; i++) {
-    if (!(i%12)) {
-      note_on(1, pitch, 44);
-    }
 
-    if (!(i%17)) {
-      note_off(1, pitch, 0);
+  for (int pitch = 0; pitch < 100; pitch++) {
+    printf("Test: gsynth dacoutput (pitch %d)...\n", pitch);
+    note_on(1, pitch, 120);
+    for (int i = 0; i < 10000; i++) {
+      dacoutput();
     }
-
-    dacoutput();
+    note_off(1, pitch, 0);
   }
 }

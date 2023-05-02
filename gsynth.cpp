@@ -150,9 +150,9 @@ void generate_sample(int voice_idx, int wave_frequency) {
   if (wave_frequency == 0) {
     (*voices[voice_idx].next_size) = 0;
     voices[voice_idx].flip_buffers = true;
-    char dbg[64];
-    snprintf(dbg, 64, "Turning voice %d off.", voice_idx);
-    debug_print(dbg);
+    //char dbg[64];
+    //snprintf(dbg, 64, "Turning voice %d off.", voice_idx);
+    //debug_print(dbg);
     display_nosample();
     return;
   }

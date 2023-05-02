@@ -20,10 +20,10 @@ unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequenc
   if (sample_count > MAX_SAMPLE_SIZE) {
     return 0;
   }
-  int half = (int)(sample_count/2.0) * sizeof(short);
 
-  memset(buffer, 0x00, half);
-  memset(buffer+half, 0xFF, half);
+  int half = (int)(sample_count/2.0);
+  memset(buffer, 0x00, half * sizeof(short));
+  memset(buffer+half, 0xFF, half * sizeof(short));
   return sample_count;
 }
 
