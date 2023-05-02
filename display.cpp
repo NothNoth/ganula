@@ -44,9 +44,13 @@ void display_sample(unsigned short* sample, unsigned short len, unsigned int fre
   int y;
   float xScale = (len/64.0);
 
+
   for (x = 0; x < 64; x++) {
     //From 4096 range to 32 for Y axis => divide by 8 => 3 bits shift
     y = sample[int(x*xScale)] / 128;
+    if (y >= 32) {
+      y = 31;
+    }
     display.drawPixel(x, y, WHITE);
     display.drawPixel(x+64, y, WHITE);
     if (x+1 < 64) {
@@ -55,9 +59,11 @@ void display_sample(unsigned short* sample, unsigned short len, unsigned int fre
     }
   }
 
-//FIXME : 
-  display.drawFastVLine(x+64, 31, 0, WHITE);
-  display.drawFastVLine(x+64, 0, 31, WHITE);
+  int y1 = sample[0 ]/128;
+  int y2 = sample[int(63 * xScale)]/128;
+  for (y = (y1<y2?y1:y2); y < (y1<y2?y2:y1); y++) {
+    display.drawPixel(64, y, WHITE);
+  }
 
   char txt[16];
   sprintf(txt,"%dHz", freq);
