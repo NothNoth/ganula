@@ -7,7 +7,7 @@
 
 bool menu_shown;
 
-#define MAX_MENU_ITEMS 5
+#define MAX_MENU_ITEMS 6
 typedef enum {
   menu_tag_waveform = 0,
   menu_tag_waveform_new = 1,
@@ -18,6 +18,8 @@ typedef enum {
   menu_tag_waveform_triangle = 5,
   menu_tag_waveform_saw = 6,
   menu_tag_waveform_custom1 = 7,
+  menu_tag_waveform_isaw = 8,
+
 
 } menu_tag_t;
 
@@ -66,8 +68,10 @@ void menu_setup() {
   waveforms.items[2].tag = menu_tag_waveform_triangle;
   strcpy(waveforms.items[3].name, "Saw     ");
   waveforms.items[3].tag = menu_tag_waveform_saw;
-  strcpy(waveforms.items[4].name, "Custom 1");
-  waveforms.items[4].tag = menu_tag_waveform_custom1;
+  strcpy(waveforms.items[4].name, "Isaw     ");
+  waveforms.items[4].tag = menu_tag_waveform_isaw;
+  strcpy(waveforms.items[5].name, "Custom 1");
+  waveforms.items[5].tag = menu_tag_waveform_custom1;
 
   current = &root;
 }
@@ -132,6 +136,10 @@ void menu_select() {
     break;
     case menu_tag_waveform_saw:
       gsynth_select_wave(WAVE_SAW);
+      menu_flip();
+    break;
+    case menu_tag_waveform_isaw:
+      gsynth_select_wave(WAVE_ISAW);
       menu_flip();
     break;
     case menu_tag_waveform_custom1:

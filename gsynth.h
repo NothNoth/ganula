@@ -8,6 +8,7 @@ typedef enum {
   WAVE_SIN = 2,
   WAVE_TRIANGLE = 3,
   WAVE_CUSTOM = 4,
+  WAVE_ISAW = 5,
   WAVE_MAX
  } wave_t;
 

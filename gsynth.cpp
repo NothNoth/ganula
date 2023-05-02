@@ -176,6 +176,12 @@ void generate_sample(int voice_idx, int wave_frequency) {
       debug_print("Switch to saw.");
     }
     break;
+    case WAVE_ISAW:
+    {
+      voices[voice_idx].next_size = tone_generate_isaw(voices[voice_idx].next, voices[voice_idx].wave_frequency);
+      debug_print("Switch to isaw.");
+    }
+    break;
     case WAVE_SIN:
     {
       voices[voice_idx].next_size = tone_generate_sin(voices[voice_idx].next, voices[voice_idx].wave_frequency);

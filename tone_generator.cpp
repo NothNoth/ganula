@@ -40,11 +40,28 @@ unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) 
   memset(buffer, 0x00, sample_count * sizeof(short));
   float increment = (float)(MAX_DAC)/(float)sample_count;
   for (i = 0; i < sample_count; i++) {
-    buffer[i] = (unsigned short)((float)(i)*increment);
+    buffer[i] = MAX_DAC - (unsigned short)((float)(i)*increment);
   }
   return sample_count;
 }
 
+
+unsigned int tone_generate_isaw(unsigned short*buffer, unsigned short frequency) {
+  int i;
+
+  //Since we're playing at given sample rate, we will be using sample_count space on the buffer
+  unsigned int sample_count = SAMPLE_RATE / frequency;
+  if (sample_count > MAX_SAMPLE_SIZE) {
+    return 0;
+  }
+
+  memset(buffer, 0x00, sample_count * sizeof(short));
+  float increment = (float)(MAX_DAC)/(float)sample_count;
+  for (i = 0; i < sample_count; i++) {
+    buffer[i] = (unsigned short)((float)(i)*increment);
+  }
+  return sample_count;
+}
 
 unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short frequency) {
   int i;
