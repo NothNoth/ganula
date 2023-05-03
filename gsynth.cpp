@@ -37,6 +37,9 @@ typedef struct {
 unsigned short custom_wave[MAX_SAMPLE_SIZE];
 unsigned int custom_wave_size;
 
+unsigned short display_buffer[MAX_SAMPLE_SIZE];
+unsigned int display_buffer_size;
+
 #define MAX_VOICES 8
 
 wave_t wave_form;
@@ -46,6 +49,7 @@ voice_buffer_t voices[MAX_VOICES];
 int pitchToFrequency(int pitch);
 void generate_sample();
 void init_buffers();
+void refresh_display_buffer();
 
 void gsynth_setup() {
   analogWriteResolution(12);
@@ -93,6 +97,8 @@ void flip_buffers(int voice_idx) {
   voices[voice_idx].next_size = 0;
 
   voices[voice_idx].flip_buffers = false;
+
+  refresh_display_buffer();
 }
 void dacoutput() {
   gsynth_gen();
@@ -279,4 +285,33 @@ void gsynth_select_wave(wave_t w) {
   }
   wave_form = w;
   //generate_sample();
+}
+
+
+void refresh_display_buffer() {
+  int voice_idx;
+
+  memset(display_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(short));
+  display_buffer_size = 0;
+
+
+  for (display_buffer_size = 0; display_buffer_size < MAX_SAMPLE_SIZE; display_buffer_size++) {
+    int used_voices = 0;
+    int merge = 0;
+
+    for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
+      //Voice not playing or end reached
+      if ((voices[voice_idx].current_size == 0) || (display_buffer_size >= voices[voice_idx].current_size)) {
+        continue;
+      }
+      used_voices++;
+      merge += voices[voice_idx].current[display_buffer_size];
+    }
+    if (used_voices == 0) {
+      break;
+    }
+    display_buffer[display_buffer_size] = (unsigned short)(merge/(float)used_voices);
+  }
+
+  display_sample(display_buffer, display_buffer_size, 0);
 }
