@@ -214,7 +214,6 @@ void generate_sample(int voice_idx, int wave_frequency) {
     break;
   }
 
-  display_sample(voices[voice_idx].next, voices[voice_idx].next_size, voices[voice_idx].wave_frequency);
   voices[voice_idx].flip_buffers = true;
 }
 
