@@ -10,11 +10,13 @@
 
 void test_tone_generator();
 void test_gsynth();
+void test_poly();
 
 int main(int argc, char*argv[]) {
   printf("Granula - Tests\n");
-  test_tone_generator();
-  test_gsynth();
+  //test_tone_generator();
+  //test_gsynth();
+  test_poly();
   return 0;
 }
 
@@ -98,4 +100,32 @@ void test_gsynth() {
     }
     note_off(1, pitch, 0);
   }
+}
+
+
+void test_poly() {
+  FILE *csv;
+  gsynth_setup();
+  gsynth_enable(true);
+
+  printf("Test: gsynth dacoutput...\n");
+  gsynth_select_wave(WAVE_SIN);
+
+  note_on(1, 40, 120);
+
+  csv = fopen("out.csv", "w+");
+  for (int i = 0; i < 3000; i++) {
+    if (i == 1000) {
+      note_on(1, 60, 120);
+    }
+
+    if (i == 2000) {
+      note_off(1, 40, 0);
+    }
+    if (i == 2800) {
+      note_off(1, 60, 0);
+    }
+    fprintf(csv, "%d;%d\n", i, gsynth_gen());
+  }
+  fclose(csv);
 }

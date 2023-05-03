@@ -49,6 +49,7 @@ void init_buffers();
 
 void gsynth_setup() {
   analogWriteResolution(12);
+  analogWrite(AUDIO_PIN, 0);
   wave_form = WAVE_SQUARE;
   memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
   gsynth_running = true;
@@ -93,16 +94,18 @@ void flip_buffers(int voice_idx) {
 
   voices[voice_idx].flip_buffers = false;
 }
-char dacdbg[128];
-
 void dacoutput() {
+  gsynth_gen();
+}
+
+int gsynth_gen() {
   int i;
   //Not in run mode? Don't play any sound.
   if (!gsynth_running) {
-    return;
+    return 0;
   }
 
-  int merge = 0;
+  unsigned int merge = 0;
   int voices_playing = 0;
 
   for (i = 0; i < MAX_VOICES; i++) {  
@@ -119,7 +122,6 @@ void dacoutput() {
     voices_playing ++;
     merge += voices[i].current[voices[i].sample_idx];
     voices[i].sample_idx++;
-  //sprintf(dacdbg, "DAC voice %d play idx %d", i, voices[i].sample_idx);
 
     //Reach end of buffer
     if (voices[i].sample_idx >= voices[i].current_size) {
@@ -134,9 +136,11 @@ void dacoutput() {
   //No voices playing? Just output 0
   if (voices_playing == 0) {
     analogWrite(AUDIO_PIN, 0);
-    return;
+    return 0;
   }
-  analogWrite(AUDIO_PIN, (int)(merge/(float)voices_playing));
+  int out = (int)(((float)merge)/(float)voices_playing);
+  analogWrite(AUDIO_PIN, out);
+  return out;
 }
 
 void generate_sample(int voice_idx, int wave_frequency) {
@@ -212,7 +216,6 @@ void note_on(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
   }
-  debug_print(dacdbg);
 
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
@@ -242,9 +245,9 @@ void note_off(int channel, int pitch, int velocity) {
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].wave_frequency == wave_frequency) {
       generate_sample(voice_idx, 0);
-      //char dbg[64];
-      //sprintf(dbg, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
-      //debug_print(dbg);
+      char dbg[64];
+      snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
+      debug_print(dbg);
       return;
     }
 
