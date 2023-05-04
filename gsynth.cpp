@@ -51,7 +51,7 @@ int pitchToFrequency(int pitch);
 void generate_sample();
 void init_buffers();
 void refresh_display_buffer();
-float adsr_get_level(int ts, int release_ts, adsr_t *config);
+float adsr_get_level(int duration, int release_duration, adsr_t *config);
 
 void gsynth_setup() {
   analogWriteResolution(12);
@@ -133,8 +133,9 @@ int gsynth_gen() {
     }
   
     voices_playing ++;
-    float adsr_level = adsr_get_level(current_ts - voices[i].start_ts, 0, &adsr);
-    merge += voices[i].current[voices[i].sample_idx] * adsr_level;
+    //FIXME : set release_duration (-1)
+    float adsr_level = adsr_get_level(current_ts - voices[i].start_ts, -1, &adsr);
+    merge += (int)(voices[i].current[voices[i].sample_idx]) * adsr_level;
     voices[i].sample_idx++;
 
     //Reach end of buffer
@@ -334,71 +335,33 @@ void gsynth_set_adsr(int a, int d, float s, int r) {
   adsr.r_ms = r;
 }
 
-float adsr_get_level(int ts, int release_ts, adsr_t *config) {
+float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   float level;
 
-  if (ts <= config->a_ms) { // In attack section
-  // y = a.x + b
-  // b = 0
-  // 1.0 = a . config.a_ms + 0
-  
-    level = (float)ts/(float)config->a_ms;
-    //printf("Attack %d => %f\n", ts, level);
+  if (duration <= config->a_ms) { // In attack section
+    level = (float)duration/(float)config->a_ms;
     return level;
   }
 
-return 1.0; //FIXME
-  if (ts <= config->a_ms + config->d_ms) { //In decay
-    // y = a.x + b
-    //x = a_ms -> y = 1.0
-    //x = d_ms -> y = s
-
-    // 1.0 = a . a_ms + b
-    // s = a . d_ms + b
-    //
-    // 1.0 - s = a.a_ms - a.d_ms
-    // =>  1.0 - s = a . (a_ms - d_ms)
-    // a = (1.0 - s) / (a_ms - d_ms)
-    // b = 1.0 - a . a_ms
-    // b = 1.0 - (1.0 - s)*a_ms / (a_ms - d_ms)
-
-    float a = ((1.0 - config->s)/((float) config->a_ms - (float)config->d_ms)) ;
-    float b = 1.0 - (1.0 - config->s) * config->a_ms / ((float)config->a_ms - (float) config->d_ms);
-    level = a * ts + b;
-    printf("Decay %d => %f\n", ts, level);
- 
+  if (duration <= config->a_ms + config->d_ms) { //In decay
+    float a = (config->s - 1.0) / ((float) config->d_ms);
+    float b = 1.0 - (((float)config->s - 1.0)/(float)config->d_ms) * (float)config->a_ms;
+    level = a * duration + b; 
     return level;
   }
 
-  if (release_ts == 0) { /// In sustain
-    printf("Sustain %d => %f\n", ts, config->s);
-
+  if (release_duration == -1) { /// In sustain
     return config->s;
   }
 
+
   //In release
-  //y = a.x + b
+  float a = -((float)config->s) / ((float)config->r_ms) ;
+  float b = (float) config->s;
+  level = a * release_duration + b;
 
-  // x = release_ts => y = s
-  // x = (release_ts + r_ts) => y = 0
-
-  // s = a . release_ts + b
-  // 0 = a . (release_ts + r_ts) + b
-
-  // b = - a . (release_ts + r_ts)
-  // s = a .(-r_ts)
-
-  // a = -s/r_ts
-  // b = s/r_ts   . (release_ts + r_ts)
-
-  // a = - s/r_ts
-  // b = s.(release_ts + r_ts) / r_ts
-
-  float a = - config->s / config->r_ms;
-  float b = config->s * ((float) release_ts + config->r_ms) / (float) config->r_ms;
-  level = a * ts + b;
-
-  printf("Release %d => %f\n", ts, level);
-
+  if (level < 0.0) {
+    level = 0.0;
+  }
   return level;
 }

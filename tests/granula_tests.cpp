@@ -144,6 +144,14 @@ void test_adsr() {
   adsr.s = 0.7;
   adsr.r_ms = 200;
 
+  FILE * f = fopen("adsr.csv", "wb+");
+
+  for (int ts = 0; ts < 500; ts+=10) {
+    fprintf(f, "%d;%f\n", ts, adsr_get_level(ts, ts<250?-1:ts-250, &adsr));
+  }
+
+  fclose(f);
+  return;
 printf("Attack starts\n");
   level = adsr_get_level(0, 0, &adsr);
   if (abs(level - 0.0) > EPSILON) {
