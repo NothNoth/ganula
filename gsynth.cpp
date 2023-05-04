@@ -77,7 +77,7 @@ void gsynth_setup() {
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
-  init_voices();
+  //init_voices();
 }
 
 void gsynth_nextwave() {

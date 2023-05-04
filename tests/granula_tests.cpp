@@ -192,7 +192,27 @@ void test_adsr() {
   }
 }
 
+void test_fuzz() {
+  gsynth_setup();
+  gsynth_enable(true);
 
+  printf("Test: gsynth dacoutput...\n");
+  gsynth_select_wave(WAVE_SIN);
+
+  while (1) {
+    int r = rand()%100;
+
+    if (r < 10) {
+      int pitch = rand()%50 + 20;
+      note_on(1, pitch, 100);
+    } else if (r < 20) {
+      int pitch = rand()%50 + 20;
+      note_off(1, pitch, 0);
+    } else {
+      dacoutput();
+    }
+  }
+}
 void analogWrite(int port, int value) {
   if (writeFile == NULL) {
     return;
