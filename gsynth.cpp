@@ -287,7 +287,7 @@ void note_off(int channel, int pitch, int velocity) {
     }
 
   }
-  debug_print("Note off not found for freq");
+  //debug_print("Note off not found for freq");
 }
 
 int pitchToFrequency(int pitch) {

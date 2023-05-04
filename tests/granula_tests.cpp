@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+
 #include <sys/times.h>
 #include "granula_tests_stubs.h"
 #include "../tone_generator.h"
@@ -16,6 +19,7 @@ void test_tone_generator();
 void test_gsynth();
 void test_poly();
 void test_adsr();
+void test_fuzz();
 
 int main(int argc, char*argv[]) {
   printf("Granula - Functional Tests\n");
@@ -23,8 +27,9 @@ int main(int argc, char*argv[]) {
   writeFile = NULL;
   test_tone_generator();
   test_gsynth();
-  //test_poly();
-  //test_adsr();
+  test_poly();
+  test_adsr();
+  test_fuzz();
 
   return 0;
 }
@@ -192,12 +197,27 @@ void test_adsr() {
   }
 }
 
+
+static void *dac(void*args){
+  while (1) {
+    dacoutput();
+  }
+  return NULL;
+}
+
 void test_fuzz() {
   gsynth_setup();
   gsynth_enable(true);
 
   printf("Test: gsynth dacoutput...\n");
   gsynth_select_wave(WAVE_SIN);
+
+  pthread_attr_t attr;
+  pthread_t tid;
+  memset(&attr, 0x00, sizeof(pthread_attr_t));
+  pthread_attr_init(&attr);
+
+  pthread_create(&tid, &attr, dac, NULL);
 
   while (1) {
     int r = rand()%100;
@@ -208,8 +228,10 @@ void test_fuzz() {
     } else if (r < 20) {
       int pitch = rand()%50 + 20;
       note_off(1, pitch, 0);
+    } else if (r < 25) {
+      gsynth_nextwave();
     } else {
-      dacoutput();
+      usleep(1000);
     }
   }
 }
