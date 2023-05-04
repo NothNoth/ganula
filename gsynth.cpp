@@ -22,6 +22,8 @@ typedef struct {
   unsigned int wave_frequency;
   bool flip_buffers;
   int start_ts;
+  int stop_ts;
+
   unsigned short * current;
   unsigned int  current_size;
 
@@ -48,7 +50,7 @@ voice_buffer_t voices[MAX_VOICES];
 adsr_t adsr;
 
 int pitchToFrequency(int pitch);
-void generate_sample();
+void generate_sample(int voice_idx, int wave_frequency);
 void init_buffers();
 void refresh_display_buffer();
 float adsr_get_level(int duration, int release_duration, adsr_t *config);
@@ -63,9 +65,9 @@ void gsynth_setup() {
   init_buffers();
   gsynth_select_wave(WAVE_SIN);
   adsr.a_ms = 500;
-  adsr.d_ms = 10;
+  adsr.d_ms = 100;
   adsr.s = 0.6;
-  adsr.r_ms = 200;
+  adsr.r_ms = 1200;
 }
 
 void gsynth_enable(bool run) {
@@ -96,6 +98,7 @@ void init_buffers() {
 void flip_buffers(int voice_idx) {
   unsigned short * tmp = voices[voice_idx].current;
   voices[voice_idx].start_ts = millis();
+  voices[voice_idx].stop_ts = 0;
   voices[voice_idx].current = voices[voice_idx].next;
   voices[voice_idx].current_size = voices[voice_idx].next_size;
 
@@ -122,6 +125,7 @@ int gsynth_gen() {
   int current_ts = millis();
 
   for (i = 0; i < MAX_VOICES; i++) {  
+    float adsr_level;
 
     //Voice is off?  
     if ((voices[i].current_size) == 0) {
@@ -133,8 +137,19 @@ int gsynth_gen() {
     }
   
     voices_playing ++;
-    //FIXME : set release_duration (-1)
-    float adsr_level = adsr_get_level(current_ts - voices[i].start_ts, -1, &adsr);
+
+    if (voices[i].stop_ts == 0) {
+      //Voice is still playing
+      adsr_level = adsr_get_level(current_ts - voices[i].start_ts, -1, &adsr);
+    } else {
+      //Voice is releasing
+      adsr_level = adsr_get_level(current_ts - voices[i].start_ts, current_ts - voices[i].stop_ts, &adsr);
+      if (adsr_level < 0.001) {
+        //Reached 0, time to free this voice
+        generate_sample(i, 0);
+      }   
+    }
+    
     merge += (int)(voices[i].current[voices[i].sample_idx]) * adsr_level;
     voices[i].sample_idx++;
 
@@ -257,7 +272,7 @@ void note_off(int channel, int pitch, int velocity) {
   //Find matching current voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].wave_frequency == wave_frequency) {
-      generate_sample(voice_idx, 0);
+      voices[voice_idx].stop_ts = millis();
       char dbg[64];
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       debug_print(dbg);
@@ -291,7 +306,6 @@ void gsynth_select_wave(wave_t w) {
     return;
   }
   wave_form = w;
-  //generate_sample();
 }
 
 
