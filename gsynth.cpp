@@ -51,7 +51,9 @@ adsr_t adsr;
 
 int pitchToFrequency(int pitch);
 void generate_sample(int voice_idx, int wave_frequency);
-void init_buffers();
+void init_voices();
+void init_voice(int voice_idx);
+
 void refresh_display_buffer();
 float adsr_get_level(int duration, int release_duration, adsr_t *config);
 
@@ -62,7 +64,7 @@ void gsynth_setup() {
   memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
   gsynth_running = true;
 
-  init_buffers();
+  init_voices();
   gsynth_select_wave(WAVE_SIN);
   adsr.a_ms = 500;
   adsr.d_ms = 100;
@@ -72,28 +74,31 @@ void gsynth_setup() {
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
-  init_buffers();
+  init_voices();
 }
 
 void gsynth_nextwave() {
   wave_form = wave_t(((int)wave_form +1)%(int)WAVE_MAX);
 }
 
-void init_buffers() {
+void init_voices() {
   memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
 
   for (int i = 0; i < MAX_VOICES; i++) {
-  //By default current points to A
-    voices[i].current = voices[i].sampleA;
-    voices[i].current_size = 0;
-  //And next to B
-    voices[i].next = voices[i].sampleB;
-    voices[i].next_size = 0;
-
-    voices[i].flip_buffers = false;
+    init_voice(i);
   }
 }
+void init_voice(int voice_idx) {
 
+  //By default current points to A
+    voices[voice_idx].current = voices[voice_idx].sampleA;
+    voices[voice_idx].current_size = 0;
+  //And next to B
+    voices[voice_idx].next = voices[voice_idx].sampleB;
+    voices[voice_idx].next_size = 0;
+
+    voices[voice_idx].flip_buffers = false;
+}
 
 void flip_buffers(int voice_idx) {
   unsigned short * tmp = voices[voice_idx].current;
@@ -146,7 +151,8 @@ int gsynth_gen() {
       adsr_level = adsr_get_level(current_ts - voices[i].start_ts, current_ts - voices[i].stop_ts, &adsr);
       if (adsr_level < 0.001) {
         //Reached 0, time to free this voice
-        generate_sample(i, 0);
+        init_voice(i);
+        continue;
       }   
     }
     
