@@ -23,7 +23,6 @@ typedef struct {
 void gsynth_setup();
 void gsynth_enable(bool run);
 void gsynth_nextwave();
-int gsynth_gen();
 void gsynth_set_adsr(int a, int d, float s, int r);
 void gsynth_get_adsr(adsr_t *adsr);
 void dacoutput();

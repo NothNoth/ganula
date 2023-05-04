@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <sys/times.h>
 #include "granula_tests_stubs.h"
 #include "../tone_generator.h"
 #include "../setup.h"
@@ -7,6 +9,8 @@
 
 
 #define FAIL(_str) { perror(_str); exit(-1);}
+FILE * writeFile = NULL;
+
 
 void test_tone_generator();
 void test_gsynth();
@@ -14,12 +18,14 @@ void test_poly();
 void test_adsr();
 
 int main(int argc, char*argv[]) {
-  printf("Granula - Tests\n");
-  //test_tone_generator();
-  //test_gsynth();
-  //test_poly();
+  printf("Granula - Functional Tests\n");
 
-  test_adsr();
+  writeFile = NULL;
+  test_tone_generator();
+  test_gsynth();
+  //test_poly();
+  //test_adsr();
+
   return 0;
 }
 
@@ -88,7 +94,11 @@ void test_tone_generator() {
 
 void test_gsynth() {
   printf("Test: gsynth setup...\n");
+  writeFile = fopen("gsynth_test.csv", "wb+");
+
+
   gsynth_setup();
+  gsynth_set_adsr(0, 0, 1.0, 0);
   gsynth_enable(true);
 
   printf("Test: gsynth dacoutput...\n");
@@ -103,11 +113,12 @@ void test_gsynth() {
     }
     note_off(1, pitch, 0);
   }
+  fclose(writeFile);
+  writeFile = NULL;
 }
 
 
 void test_poly() {
-  FILE *csv;
   gsynth_setup();
   gsynth_enable(true);
 
@@ -116,7 +127,7 @@ void test_poly() {
 
   note_on(1, 40, 120);
 
-  csv = fopen("out.csv", "w+");
+  writeFile = fopen("poly_test.csv", "w+");
   for (int i = 0; i < 3000; i++) {
     if (i == 1000) {
       note_on(1, 60, 120);
@@ -128,9 +139,10 @@ void test_poly() {
     if (i == 2800) {
       note_off(1, 60, 0);
     }
-    fprintf(csv, "%d;%d\n", i, gsynth_gen());
+    dacoutput();
   }
-  fclose(csv);
+  fclose(writeFile);
+  writeFile = NULL;
 }
 
 #define EPSILON 0.0001
@@ -144,42 +156,54 @@ void test_adsr() {
   adsr.s = 0.7;
   adsr.r_ms = 200;
 
-  FILE * f = fopen("adsr.csv", "wb+");
-
+//Dump adsr curve
+  FILE * f = fopen("adsr_test.csv", "wb+");
   for (int ts = 0; ts < 500; ts+=10) {
     fprintf(f, "%d;%f\n", ts, adsr_get_level(ts, ts<250?-1:ts-250, &adsr));
   }
-
   fclose(f);
-  return;
-printf("Attack starts\n");
+
+//Test curve with a scenario
   level = adsr_get_level(0, 0, &adsr);
   if (abs(level - 0.0) > EPSILON) {
     perror("Attack starts at level 0");
   }
 
-printf("Attack ends\n");
   level = adsr_get_level(adsr.a_ms, 0, &adsr);
   if (abs(level - 1.0) > EPSILON) {
     printf("%f\n", level);
     perror("Attack ends at level 1.0");
   }
 
-printf("Decay ends\n");
   level = adsr_get_level(adsr.a_ms + adsr.d_ms, 0, &adsr);
   if (abs(level - adsr.s) > EPSILON) {
     perror("Sustain ends at level 'sustain'");
   }
 
-printf("Release starts\n");
   level = adsr_get_level(1000, 1, &adsr); //just released
   if (abs(level - adsr.s) > EPSILON) {
+    printf("%f\n");
     perror("Release starts at level 'sustain'");
   }
 
-printf("Release ends\n");
   level = adsr_get_level(1000, adsr.r_ms, &adsr); //fully released
   if (abs(level - 0.0) > EPSILON) {
     perror("Release ends at level 0.0");
   }
+}
+
+
+void analogWrite(int port, int value) {
+  if (writeFile == NULL) {
+    return;
+  }
+
+  fprintf(writeFile, "%d\n", value);
+}
+
+int millis() {
+  struct tms tp;
+  long t = times(&tp);
+
+  return (int)(t&0xFFFFFF) * 10;
 }

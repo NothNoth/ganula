@@ -9,10 +9,12 @@
 #define debug_print(_S_) printf("%s\n", _S_);
 
 #define analogWriteResolution(_resolution)
-#define analogWrite(_port,_value)
+void analogWrite(int port, int value);
 
 #define display_sample(_sample, _len, _freq)
 #define display_nosample()
 
-#define millis() 100
+int millis();
+
+#define gmode_get() 0
 #endif
