@@ -11,12 +11,15 @@
 void test_tone_generator();
 void test_gsynth();
 void test_poly();
+void test_adsr();
 
 int main(int argc, char*argv[]) {
   printf("Granula - Tests\n");
   //test_tone_generator();
   //test_gsynth();
-  test_poly();
+  //test_poly();
+
+  test_adsr();
   return 0;
 }
 
@@ -128,4 +131,47 @@ void test_poly() {
     fprintf(csv, "%d;%d\n", i, gsynth_gen());
   }
   fclose(csv);
+}
+
+#define EPSILON 0.0001
+
+void test_adsr() {
+  float level = 0.0;
+  adsr_t adsr;
+
+  adsr.a_ms = 100;
+  adsr.d_ms = 50;
+  adsr.s = 0.7;
+  adsr.r_ms = 200;
+
+printf("Attack starts\n");
+  level = adsr_get_level(0, 0, &adsr);
+  if (abs(level - 0.0) > EPSILON) {
+    perror("Attack starts at level 0");
+  }
+
+printf("Attack ends\n");
+  level = adsr_get_level(adsr.a_ms, 0, &adsr);
+  if (abs(level - 1.0) > EPSILON) {
+    printf("%f\n", level);
+    perror("Attack ends at level 1.0");
+  }
+
+printf("Decay ends\n");
+  level = adsr_get_level(adsr.a_ms + adsr.d_ms, 0, &adsr);
+  if (abs(level - adsr.s) > EPSILON) {
+    perror("Sustain ends at level 'sustain'");
+  }
+
+printf("Release starts\n");
+  level = adsr_get_level(1000, 1, &adsr); //just released
+  if (abs(level - adsr.s) > EPSILON) {
+    perror("Release starts at level 'sustain'");
+  }
+
+printf("Release ends\n");
+  level = adsr_get_level(1000, adsr.r_ms, &adsr); //fully released
+  if (abs(level - 0.0) > EPSILON) {
+    perror("Release ends at level 0.0");
+  }
 }

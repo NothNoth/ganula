@@ -20,17 +20,17 @@ typedef enum {
 
 typedef struct {
   unsigned int wave_frequency;
-
   bool flip_buffers;
+  int start_ts;
   unsigned short * current;
   unsigned int  current_size;
+
   unsigned short * next;
   unsigned int  next_size;
 
   unsigned int sample_idx;
 
   unsigned short sampleA[MAX_SAMPLE_SIZE];
-
   unsigned short sampleB[MAX_SAMPLE_SIZE];
 } voice_buffer_t;
 
@@ -45,11 +45,13 @@ unsigned int display_buffer_size;
 wave_t wave_form;
 bool gsynth_running = true;
 voice_buffer_t voices[MAX_VOICES];
+adsr_t adsr;
 
 int pitchToFrequency(int pitch);
 void generate_sample();
 void init_buffers();
 void refresh_display_buffer();
+float adsr_get_level(int ts, int release_ts, adsr_t *config);
 
 void gsynth_setup() {
   analogWriteResolution(12);
@@ -60,6 +62,10 @@ void gsynth_setup() {
 
   init_buffers();
   gsynth_select_wave(WAVE_SIN);
+  adsr.a_ms = 500;
+  adsr.d_ms = 10;
+  adsr.s = 0.6;
+  adsr.r_ms = 200;
 }
 
 void gsynth_enable(bool run) {
@@ -89,7 +95,7 @@ void init_buffers() {
 
 void flip_buffers(int voice_idx) {
   unsigned short * tmp = voices[voice_idx].current;
-
+  voices[voice_idx].start_ts = millis();
   voices[voice_idx].current = voices[voice_idx].next;
   voices[voice_idx].current_size = voices[voice_idx].next_size;
 
@@ -113,6 +119,7 @@ int gsynth_gen() {
 
   unsigned int merge = 0;
   int voices_playing = 0;
+  int current_ts = millis();
 
   for (i = 0; i < MAX_VOICES; i++) {  
 
@@ -126,7 +133,8 @@ int gsynth_gen() {
     }
   
     voices_playing ++;
-    merge += voices[i].current[voices[i].sample_idx];
+    float adsr_level = adsr_get_level(current_ts - voices[i].start_ts, 0, &adsr);
+    merge += voices[i].current[voices[i].sample_idx] * adsr_level;
     voices[i].sample_idx++;
 
     //Reach end of buffer
@@ -167,7 +175,6 @@ void generate_sample(int voice_idx, int wave_frequency) {
     //char dbg[64];
     //snprintf(dbg, 64, "Turning voice %d off.", voice_idx);
     //debug_print(dbg);
-    display_nosample();
     return;
   }
 
@@ -289,6 +296,7 @@ void gsynth_select_wave(wave_t w) {
 
 void refresh_display_buffer() {
   int voice_idx;
+  bool got_sound = false;
 
   memset(display_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(short));
   display_buffer_size = 0;
@@ -309,8 +317,88 @@ void refresh_display_buffer() {
     if (used_voices == 0) {
       break;
     }
+    got_sound = true;
     display_buffer[display_buffer_size] = (unsigned short)(merge/(float)used_voices);
   }
+  if (got_sound) {
+    display_sample(display_buffer, display_buffer_size, 0);
+  } else {
+    display_nosample();
+  }
+}
 
-  display_sample(display_buffer, display_buffer_size, 0);
+void gsynth_set_adsr(int a, int d, float s, int r) {
+  adsr.a_ms = a;
+  adsr.d_ms = d;
+  adsr.s = s;
+  adsr.r_ms = r;
+}
+
+float adsr_get_level(int ts, int release_ts, adsr_t *config) {
+  float level;
+
+  if (ts <= config->a_ms) { // In attack section
+  // y = a.x + b
+  // b = 0
+  // 1.0 = a . config.a_ms + 0
+  
+    level = (float)ts/(float)config->a_ms;
+    //printf("Attack %d => %f\n", ts, level);
+    return level;
+  }
+
+return 1.0; //FIXME
+  if (ts <= config->a_ms + config->d_ms) { //In decay
+    // y = a.x + b
+    //x = a_ms -> y = 1.0
+    //x = d_ms -> y = s
+
+    // 1.0 = a . a_ms + b
+    // s = a . d_ms + b
+    //
+    // 1.0 - s = a.a_ms - a.d_ms
+    // =>  1.0 - s = a . (a_ms - d_ms)
+    // a = (1.0 - s) / (a_ms - d_ms)
+    // b = 1.0 - a . a_ms
+    // b = 1.0 - (1.0 - s)*a_ms / (a_ms - d_ms)
+
+    float a = ((1.0 - config->s)/((float) config->a_ms - (float)config->d_ms)) ;
+    float b = 1.0 - (1.0 - config->s) * config->a_ms / ((float)config->a_ms - (float) config->d_ms);
+    level = a * ts + b;
+    printf("Decay %d => %f\n", ts, level);
+ 
+    return level;
+  }
+
+  if (release_ts == 0) { /// In sustain
+    printf("Sustain %d => %f\n", ts, config->s);
+
+    return config->s;
+  }
+
+  //In release
+  //y = a.x + b
+
+  // x = release_ts => y = s
+  // x = (release_ts + r_ts) => y = 0
+
+  // s = a . release_ts + b
+  // 0 = a . (release_ts + r_ts) + b
+
+  // b = - a . (release_ts + r_ts)
+  // s = a .(-r_ts)
+
+  // a = -s/r_ts
+  // b = s/r_ts   . (release_ts + r_ts)
+
+  // a = - s/r_ts
+  // b = s.(release_ts + r_ts) / r_ts
+
+  float a = - config->s / config->r_ms;
+  float b = config->s * ((float) release_ts + config->r_ms) / (float) config->r_ms;
+  level = a * ts + b;
+
+  printf("Release %d => %f\n", ts, level);
+
+  return level;
 }

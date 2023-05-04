@@ -14,5 +14,5 @@
 #define display_sample(_sample, _len, _freq)
 #define display_nosample()
 
-
+#define millis() 100
 #endif

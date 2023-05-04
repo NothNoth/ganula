@@ -65,13 +65,14 @@ void display_sample(unsigned short* sample, unsigned short len, unsigned int fre
     display.drawPixel(64, y, WHITE);
   }
 
-  char txt[16];
-  sprintf(txt,"%dHz", freq);
-  display.setCursor(1,1);
-  display.setTextSize(1);
-  display.setTextColor(BLACK, WHITE);
-  display.print(txt);
-
+  if (freq != 0) {
+    char txt[16];
+    sprintf(txt,"%dHz", freq);
+    display.setCursor(1,1);
+    display.setTextSize(1);
+    display.setTextColor(BLACK, WHITE);
+    display.print(txt);
+  }
   display.display();
 }
 
