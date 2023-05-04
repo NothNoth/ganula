@@ -1,5 +1,6 @@
 #include "gsynth.h"
 #include "setup.h"
+#include "granula.h"
 #include "tone_generator.h"
 #include <string.h>
 #include <math.h>
@@ -279,8 +280,8 @@ void note_off(int channel, int pitch, int velocity) {
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].wave_frequency == wave_frequency) {
       
-       generate_sample(voice_idx, 0); //FIXME use line below instead.
-      //voices[voice_idx].stop_ts = millis();
+      generate_sample(voice_idx, 0); //FIXME use line below instead.
+      //voices[voice_idx].stop_ts = millis(); //Mark as "releasing.."
       char dbg[64];
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       debug_print(dbg);
@@ -343,6 +344,12 @@ void refresh_display_buffer() {
     got_sound = true;
     display_buffer[display_buffer_size] = (unsigned short)(merge/(float)used_voices);
   }
+
+//Not currently in RUN mode, don't disturb display.
+  if (gmode_get() != GMODE_RUN) {
+    return;
+  }
+
   if (got_sound) {
     display_sample(display_buffer, display_buffer_size, 0);
   } else {

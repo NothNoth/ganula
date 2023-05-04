@@ -10,6 +10,6 @@ typedef enum {
 } gmode_t;
 
 void gmode_switch(gmode_t new_mode);
-
+gmode_t gmode_get();
 
 #endif

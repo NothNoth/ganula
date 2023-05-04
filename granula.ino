@@ -6,16 +6,7 @@
 #include "midi.h"
 #include "gsynth.h"
 #include "menu.h"
-
-
-
-typedef enum {
-  GMODE_RUN = 0,
-  GMODE_CUSTOM_POTSYNC = 1,
-  GMODE_CUSTOM_REC = 2,
-  GMODE_ADSR = 3,
-  GMODE_MAX
-} gmode_t;
+#include "granula.h"
 
 gmode_t mode;
 int last_pot_value;
@@ -86,6 +77,10 @@ void loop() {
       }
     }
   }
+}
+
+gmode_t gmode_get() {
+  return mode;
 }
 
 void gmode_switch(gmode_t new_mode) {
