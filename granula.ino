@@ -13,6 +13,7 @@ typedef enum {
   GMODE_RUN = 0,
   GMODE_CUSTOM_POTSYNC = 1,
   GMODE_CUSTOM_REC = 2,
+  GMODE_ADSR = 3,
   GMODE_MAX
 } gmode_t;
 
@@ -25,6 +26,8 @@ int last_pot_value;
 int custom_rec_idx;
 int custom_rec_ts;
 unsigned short customrecsample[CUSTOM_REC_SAMPLE_SIZE];
+
+int adsr_select_idx;
 
 void setup() {
   last_pot_value = 0;
@@ -96,6 +99,8 @@ void gmode_switch(gmode_t new_mode) {
     break;
     case GMODE_CUSTOM_REC:
     break;
+    case GMODE_ADSR:
+    break;
   }
 
   //Setup new mode
@@ -111,6 +116,13 @@ void gmode_switch(gmode_t new_mode) {
       custom_rec_ts = millis();
       memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE*sizeof(unsigned short));
       display_rec(custom_rec_idx, last_pot_value, customrecsample);
+    break;
+    case GMODE_ADSR:
+      adsr_t adsr;
+      gsynth_enable(true);
+      adsr_select_idx = 0;
+      gsynth_get_adsr(&adsr);
+      display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, true, false, false, false);
     break;
   }
 
@@ -132,16 +144,50 @@ void pot_changed(int value) {
     break;
     case GMODE_CUSTOM_REC:
     break;
+    case GMODE_ADSR:
+    {
+      adsr_t adsr;
+      gsynth_get_adsr(&adsr);
+      switch (adsr_select_idx) {
+        case 0: //Attack
+          adsr.a_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+        break;
+        case 1: //Decay
+          adsr.d_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+        break;
+        case 2: //Sustain
+          adsr.s = ((float)value/(float)POT_RANGE);
+        break;
+        case 3: //Release
+          adsr.r_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+        break;
+      }
+      gsynth_set_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);
+      display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, adsr_select_idx==0?true:false, adsr_select_idx==1?true:false, adsr_select_idx==2?true:false, adsr_select_idx==3?true:false);
+
+    }
+    break;
   }
 
 }
 
 
 void bt1_pressed(int unused) {
+  if (mode == GMODE_ADSR) {
+    gmode_switch(GMODE_RUN);
+    return;
+  }
   menu_flip();
 }
 
 void bt2_pressed(int unused) {
+  if (mode == GMODE_ADSR) {
+    adsr_t adsr;
+    gsynth_get_adsr(&adsr);
 
+    adsr_select_idx = (adsr_select_idx+1)%4;
+    display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, adsr_select_idx==0?true:false, adsr_select_idx==1?true:false, adsr_select_idx==2?true:false, adsr_select_idx==3?true:false);
+    return;
+  }
   menu_select();
 }

@@ -14,4 +14,5 @@ void display_rec(int rec_bar, unsigned short potvalue, unsigned short *recsample
 void display_clear();
 void display_text(char *text, int line, bool highlight);
 
+void display_adsr(int a, int d, float s, int r, bool select_a, bool select_d, bool select_s, bool select_r);
 #endif

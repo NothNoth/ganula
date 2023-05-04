@@ -5,6 +5,7 @@ typedef enum {
   GMODE_RUN = 0,
   GMODE_CUSTOM_POTSYNC = 1,
   GMODE_CUSTOM_REC = 2,
+  GMODE_ADSR = 3,
   GMODE_MAX
 } gmode_t;
 

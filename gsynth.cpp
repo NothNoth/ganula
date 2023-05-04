@@ -278,7 +278,9 @@ void note_off(int channel, int pitch, int velocity) {
   //Find matching current voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].wave_frequency == wave_frequency) {
-      voices[voice_idx].stop_ts = millis();
+      
+       generate_sample(voice_idx, 0); //FIXME use line below instead.
+      //voices[voice_idx].stop_ts = millis();
       char dbg[64];
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       debug_print(dbg);
@@ -385,3 +387,8 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   }
   return level;
 }
+
+void gsynth_get_adsr(adsr_t *adsrptr) {
+  memcpy(adsrptr, &adsr, sizeof(adsr_t));
+}
+

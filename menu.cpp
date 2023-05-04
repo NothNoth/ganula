@@ -121,6 +121,9 @@ void menu_select() {
       return;
     break;
     case menu_tag_enveloppe:
+      gmode_switch(GMODE_ADSR);
+      menu_flip();
+      return;
     break;
     case menu_tag_waveform_sin:
       gsynth_select_wave(WAVE_SIN);
