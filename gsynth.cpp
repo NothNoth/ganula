@@ -368,14 +368,14 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
 
   if (duration <= config->a_ms) { // In attack section
     level = (float)duration/(float)config->a_ms;
-    return level;
+    return level<0.0?0.0:level;
   }
 
   if (duration <= config->a_ms + config->d_ms) { //In decay
     float a = (config->s - 1.0) / ((float) config->d_ms);
     float b = 1.0 - (((float)config->s - 1.0)/(float)config->d_ms) * (float)config->a_ms;
     level = a * duration + b; 
-    return level;
+    return level<0.0?0.0:level;
   }
 
   if (release_duration == -1) { /// In sustain
@@ -388,10 +388,7 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   float b = (float) config->s;
   level = a * release_duration + b;
 
-  if (level < 0.0) {
-    level = 0.0;
-  }
-  return level;
+  return level<0.0?0.0:level;
 }
 
 void gsynth_get_adsr(adsr_t *adsrptr) {

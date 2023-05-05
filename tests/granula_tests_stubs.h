@@ -16,7 +16,7 @@
 
 
 #define debug_setup(_BPS_) 
-#define debug_print(_S_) printf("%s\n", _S_);
+#define debug_print(_S_) printf("console> %s\n", _S_);
 
 void debug_set_write_file(char *filename);
 void debug_close_write_file();

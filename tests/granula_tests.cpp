@@ -185,6 +185,7 @@ void test_poly() {
     dacoutput();
   }
   debug_close_write_file();
+  TEST_SUB("Manual check of poly_test.csv");
   TEST_END("POLYphony");
 }
 
