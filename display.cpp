@@ -1,11 +1,15 @@
 #include "display.h"
-#include "ntm.h"
 #include "setup.h"
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
+#include <math.h>
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+  #include <SPI.h>
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+#endif
 
 Adafruit_SSD1306 display;
 
@@ -38,12 +42,12 @@ void display_loop() {
 }
 
 //Display a sample buffer on the LCD (shows one or two periods depending on SHOW_TWO_PERIODS flag)
-void display_sample(unsigned short* sample, unsigned short len, unsigned int freq) {
-  display.clearDisplay();
+void display_sample(unsigned short* sample, unsigned short len, unsigned int freq){
   int x = 0;
   int y;
   float xScale = (len/64.0);
 
+  display.clearDisplay();
 
   for (x = 0; x < 64; x++) {
     //From 4096 range to 32 for Y axis => divide by 128 => 7 bits shift

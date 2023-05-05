@@ -1,6 +1,11 @@
 #include "setup.h"
 #include "controls.h"
-#include "ntm.h"
+
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 
 unsigned int bt1_trigger;
 unsigned int bt2_trigger;

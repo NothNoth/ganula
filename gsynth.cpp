@@ -4,12 +4,12 @@
 #include "tone_generator.h"
 #include <string.h>
 #include <math.h>
+#include "display.h"
 
 #ifdef _GRANULA_TESTS_
   #include "granula_tests_stubs.h"
 #else
   #include "Arduino.h"
-  #include "display.h"
   #include "ntm.h"
 #endif
 

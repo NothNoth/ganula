@@ -1,7 +1,10 @@
 #include "midi.h"
-#include "MIDIUSB.h"
-#include "ntm.h"
-
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "MIDIUSB.h"
+  #include "ntm.h"
+#endif
 
 midi_noteon_cb_t noteon_cb;
 midi_noteoff_cb_t noteoff_cb;

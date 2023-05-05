@@ -1,9 +1,14 @@
 #include "menu.h"
 #include "display.h"
-#include "ntm.h"
 #include "gsynth.h"
 #include "granula.h"
 #include <string.h>
+
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 
 bool menu_shown;
 

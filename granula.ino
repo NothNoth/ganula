@@ -1,8 +1,16 @@
 #include "setup.h"
-#include "ntm.h"
 #include "controls.h"
 #include "display.h"
-#include <DueTimer.h>
+#include <math.h>
+#include <string.h>
+
+
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+  #include <DueTimer.h>
+#endif
 #include "midi.h"
 #include "gsynth.h"
 #include "menu.h"
@@ -19,6 +27,11 @@ int custom_rec_ts;
 unsigned short customrecsample[CUSTOM_REC_SAMPLE_SIZE];
 
 int adsr_select_idx;
+
+void pot_changed(int value);
+void bt1_pressed(int unused);
+void bt2_pressed(int unused);
+
 
 void setup() {
   last_pot_value = 0;
