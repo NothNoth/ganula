@@ -34,6 +34,6 @@ void gsynth_save_custom(unsigned short *customrec, int len);
 void gsynth_select_wave(wave_t w);
 
 //For tests only
-float adsr_get_level(int ts, int release_ts, adsr_t *config);
+float adsr_get_level(int duration, int release_duration, adsr_t *config);
 
 #endif

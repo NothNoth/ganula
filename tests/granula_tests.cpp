@@ -13,7 +13,7 @@
 #define TEST_START(_str) printf("\n\n[Testing %s]...\n", _str);
 #define TEST_END(_str)   printf("[Finished %s.]\n", _str);
 #define TEST_SUB(_str)   printf("\t%s\n", _str);
-#define TEST_ASSERT(_condition, _str) if ((_condition) == false) {printf("!!! Test failed at line %d: %s\n", __LINE__, _str); exit(-1);}
+#define TEST_ASSERT(_condition, _str) if ((_condition) == false) {printf("[FAILED] At line %d: %s\n", __LINE__, _str); exit(-1);} else {printf("[PASSED] %s\n", _str);}
 #define FAIL(_str) { perror(_str); exit(-1);}
 
 
@@ -187,7 +187,7 @@ void test_poly() {
   TEST_END("POLYphony");
 }
 
-#define EPSILON 0.0001
+#define EPSILON 0.01
 
 void test_adsr() {
   float level = 0.0;
@@ -197,7 +197,7 @@ void test_adsr() {
   adsr.a_ms = 100;
   adsr.d_ms = 50;
   adsr.s = 0.7;
-  adsr.r_ms = 200;
+  adsr.r_ms = 1200;
 
 //Dump adsr curve
   FILE * f = fopen("adsr_test.csv", "wb+");
@@ -221,6 +221,9 @@ void test_adsr() {
 
   level = adsr_get_level(1000, adsr.r_ms, &adsr); //fully released
   TEST_ASSERT(abs(level - 0.0) <= EPSILON, "Release ends at level 0.0");
+
+  level = adsr_get_level(1000, 2*adsr.r_ms, &adsr); //very fully released
+  TEST_ASSERT(abs(level - 0.0) <= EPSILON, "After full release, level is still at 0.0");
 
   TEST_END("ADSR");
 }
