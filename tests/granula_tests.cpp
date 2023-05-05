@@ -183,13 +183,12 @@ void test_poly() {
     if (i == 7000) {
       note_off(1, 40, 0);
     }
+
+
+    usleep(1000 * 1000.0/(float)SAMPLE_RATE);
     dacoutput();
   }
 
-  //FIXME:
-  // On the graph, from 7000 to 1000 we should have a nul signal since
-  // everyone is off, and there's not release time.
-  // But actually there's something...
   debug_close_write_file();
   TEST_SUB("Manual check of poly_test.csv");
   TEST_END("POLYphony");
