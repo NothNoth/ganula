@@ -23,20 +23,12 @@ typedef struct {
   bool free_voice;
 
   unsigned int wave_frequency;
-  bool flip_buffers;
   int start_ts;
   int stop_ts;
 
-  unsigned short * current;
-  unsigned int  current_size;
-
-  unsigned short * next;
-  unsigned int  next_size;
-
+  unsigned int  sample_size;
   unsigned int sample_idx;
-
-  unsigned short sampleA[MAX_SAMPLE_SIZE];
-  unsigned short sampleB[MAX_SAMPLE_SIZE];
+  unsigned short sample[MAX_SAMPLE_SIZE];
 } voice_buffer_t;
 
 unsigned short custom_wave[MAX_SAMPLE_SIZE];
@@ -77,7 +69,6 @@ void gsynth_setup() {
 
 void gsynth_enable(bool run) {
   gsynth_running = run;
-  //init_voices();
 }
 
 void gsynth_nextwave() {
@@ -92,34 +83,9 @@ void init_voices() {
   }
 }
 void init_voice(int voice_idx) {
-
-//By default current points to A
-  voices[voice_idx].current = voices[voice_idx].sampleA;
-  voices[voice_idx].current_size = 0;
-//And next to B
-  voices[voice_idx].next = voices[voice_idx].sampleB;
-  voices[voice_idx].next_size = 0;
-
-  voices[voice_idx].flip_buffers = false;
-
+  voices[voice_idx].sample_size = 0;
   voices[voice_idx].free_voice = true;
 }
-
-void flip_buffers(int voice_idx) {
-  unsigned short * tmp = voices[voice_idx].current;
-  voices[voice_idx].start_ts = millis();
-  voices[voice_idx].stop_ts = 0;
-  voices[voice_idx].current = voices[voice_idx].next;
-  voices[voice_idx].current_size = voices[voice_idx].next_size;
-
-  voices[voice_idx].next = tmp;
-  voices[voice_idx].next_size = 0;
-
-  voices[voice_idx].flip_buffers = false;
-
-  refresh_display_buffer();
-}
-
 
 void dacoutput() {
   int i;
@@ -139,10 +105,6 @@ void dacoutput() {
     if (voices[i].free_voice == true) {
       continue;
     }
-
-    if (voices[i].flip_buffers == true) {
-      flip_buffers(i);
-    }
   
     voices_playing ++;
 
@@ -150,7 +112,7 @@ void dacoutput() {
       //Voice is still playing
       adsr_level = adsr_get_level(current_ts - voices[i].start_ts, -1, &adsr);
     } else {
-      //Voice is releasing
+      //Voice is being released
       adsr_level = adsr_get_level(current_ts - voices[i].start_ts, current_ts - voices[i].stop_ts, &adsr);
       if (adsr_level < 0.001) {
         //Reached 0, time to free this voice
@@ -159,16 +121,12 @@ void dacoutput() {
       }   
     }
 
-    merge += (((float)voices[i].current[voices[i].sample_idx]) - half_dac_range) * adsr_level ;
+    merge += (((float)voices[i].sample[voices[i].sample_idx]) - half_dac_range) * adsr_level ;
     voices[i].sample_idx++;
 
     //Reach end of buffer
-    if (voices[i].sample_idx >= voices[i].current_size) {
+    if (voices[i].sample_idx >= voices[i].sample_size) {
       voices[i].sample_idx = 0; //restart
-
-      if (voices[i].flip_buffers == true) { //Eventually flip buffers for a new sample
-        flip_buffers(i);
-      }
     }
   }
 
@@ -197,52 +155,52 @@ bool generate_sample(int voice_idx, int wave_frequency) {
   switch (wave_form) {
     case WAVE_SQUARE:
     {
-      voices[voice_idx].next_size = tone_generate_square(voices[voice_idx].next, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_square(voices[voice_idx].sample, wave_frequency);
       debug_print("Switch to square.");
     }
     break;
     case WAVE_SAW:
     {
-      voices[voice_idx].next_size = tone_generate_saw(voices[voice_idx].next, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_saw(voices[voice_idx].sample, wave_frequency);
       debug_print("Switch to saw.");
     }
     break;
     case WAVE_ISAW:
     {
-      voices[voice_idx].next_size = tone_generate_isaw(voices[voice_idx].next, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_isaw(voices[voice_idx].sample, wave_frequency);
       debug_print("Switch to isaw.");
     }
     break;
     case WAVE_SIN:
     {
-      voices[voice_idx].next_size = tone_generate_sin(voices[voice_idx].next, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_sin(voices[voice_idx].sample, wave_frequency);
       debug_print("Switch to sin.");
     }
     break;
     case WAVE_TRIANGLE:
     {
-      voices[voice_idx].next_size = tone_generate_triangle(voices[voice_idx].next, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_triangle(voices[voice_idx].sample, wave_frequency);
       debug_print("Switch to triangle.");
     }
     break;
     case WAVE_CUSTOM:
     {
-      voices[voice_idx].next_size = tone_generate_custom(voices[voice_idx].next, custom_wave, custom_wave_size, wave_frequency);
+      voices[voice_idx].sample_size = tone_generate_custom(voices[voice_idx].sample, custom_wave, custom_wave_size, wave_frequency);
       debug_print("Switch to Custom.");
     }
     break;
     case WAVE_MAX:
     break;
   }
-
-  //Always flip buffers, even if generation failed.
-  voices[voice_idx].flip_buffers = true;
-  voices[voice_idx].wave_frequency = wave_frequency;
-
-  //Mark voice as used only if generation succeeded
-  if (voices[voice_idx].next_size != 0) {
-    voices[voice_idx].free_voice = false;
+  if (voices[voice_idx].sample_size == 0) {
+    return false;
   }
+  voices[voice_idx].wave_frequency = wave_frequency;
+  voices[voice_idx].start_ts = millis();
+  voices[voice_idx].stop_ts = 0;
+  voices[voice_idx].free_voice = false;
+
+  refresh_display_buffer();
 
   return true;
 }
@@ -339,11 +297,11 @@ void refresh_display_buffer() {
 
     for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
       //Voice not playing or end reached
-      if ((voices[voice_idx].free_voice == true) || (display_buffer_size >= voices[voice_idx].current_size)) {
+      if ((voices[voice_idx].free_voice == true) || (display_buffer_size >= voices[voice_idx].sample_size)) {
         continue;
       }
       used_voices++;
-      merge += voices[voice_idx].current[display_buffer_size];
+      merge += voices[voice_idx].sample[display_buffer_size];
     }
     if (used_voices == 0) {
       break;
