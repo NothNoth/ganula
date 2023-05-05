@@ -22,8 +22,11 @@ unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequenc
   }
 
   int half = (int)(sample_count/2.0);
-  memset(buffer, 0x00, half * sizeof(short));
-  memset(buffer+half, 0xFF, half * sizeof(short));
+  for (int i = 0; i < half; i++) {
+    buffer[i] = 0x00;
+    buffer[i+half] = MAX_DAC;
+  }
+
   return sample_count;
 }
 

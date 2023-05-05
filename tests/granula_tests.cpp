@@ -166,7 +166,7 @@ void test_poly() {
   gsynth_enable(true);
 
   TEST_SUB("Test: gsynth dacoutput...");
-  gsynth_select_wave(WAVE_SIN);
+  gsynth_select_wave(WAVE_SQUARE);
 
   note_on(1, 40, 120);
 
