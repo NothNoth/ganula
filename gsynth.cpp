@@ -131,7 +131,7 @@ void dacoutput() {
   float merge = 0.0;
   int voices_playing = 0;
   int current_ts = millis();
-
+  float half_dac_range = ((float)MAX_DAC)/2.0;
   for (i = 0; i < MAX_VOICES; i++) {  
     float adsr_level;
 
@@ -158,8 +158,8 @@ void dacoutput() {
         continue;
       }   
     }
-    
-    merge += ((float)voices[i].current[voices[i].sample_idx] * adsr_level) - (float)MAX_DAC/2.0;
+
+    merge += (((float)voices[i].current[voices[i].sample_idx]) - half_dac_range) * adsr_level ;
     voices[i].sample_idx++;
 
     //Reach end of buffer
@@ -174,11 +174,11 @@ void dacoutput() {
 
   //No voices playing? Just output 0
   if (voices_playing == 0) {
-    analogWrite(AUDIO_PIN, 0);
+    analogWrite(AUDIO_PIN, half_dac_range);
     return;
   }
 
-  int out = (int)((((float)merge)/(float)voices_playing) + (float)(MAX_DAC)/2.0);
+  int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
   return;
 }

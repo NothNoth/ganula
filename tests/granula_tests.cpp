@@ -166,26 +166,30 @@ void test_poly() {
 
   gsynth_setup();
   gsynth_enable(true);
-  gsynth_set_adsr(0, 0, 0.9, 0);
+  gsynth_set_adsr(0, 0, 1.0, 0);
   TEST_SUB("Test: gsynth dacoutput...");
-  gsynth_select_wave(WAVE_SIN);
+  gsynth_select_wave(WAVE_SAW);
 
   note_on(1, 40, 120);
 
   debug_set_write_file("poly_test.csv");
-  for (int i = 0; i < 3000; i++) {
-    if (i == 1000) {
+  for (int i = 0; i < 10000; i++) {
+    if (i == 2500) {
       note_on(1, 60, 120);
     }
-
-    if (i == 2000) {
-      note_off(1, 40, 0);
-    }
-    if (i == 2800) {
+    if (i == 5000) {
       note_off(1, 60, 0);
+    }
+    if (i == 7000) {
+      note_off(1, 40, 0);
     }
     dacoutput();
   }
+
+  //FIXME:
+  // On the graph, from 7000 to 1000 we should have a nul signal since
+  // everyone is off, and there's not release time.
+  // But actually there's something...
   debug_close_write_file();
   TEST_SUB("Manual check of poly_test.csv");
   TEST_END("POLYphony");
