@@ -162,11 +162,13 @@ void test_gsynth() {
 
 void test_poly() {
   TEST_START("POLYphony");
+
+
   gsynth_setup();
   gsynth_enable(true);
-
+  gsynth_set_adsr(0, 0, 0.9, 0);
   TEST_SUB("Test: gsynth dacoutput...");
-  gsynth_select_wave(WAVE_SQUARE);
+  gsynth_select_wave(WAVE_SIN);
 
   note_on(1, 40, 120);
 

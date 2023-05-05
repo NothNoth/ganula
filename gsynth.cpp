@@ -128,7 +128,7 @@ void dacoutput() {
     return;
   }
 
-  unsigned int merge = 0;
+  float merge = 0.0;
   int voices_playing = 0;
   int current_ts = millis();
 
@@ -159,7 +159,7 @@ void dacoutput() {
       }   
     }
     
-    merge += (int)(voices[i].current[voices[i].sample_idx]) * adsr_level;
+    merge += ((float)voices[i].current[voices[i].sample_idx] * adsr_level) - (float)MAX_DAC/2.0;
     voices[i].sample_idx++;
 
     //Reach end of buffer
@@ -177,7 +177,8 @@ void dacoutput() {
     analogWrite(AUDIO_PIN, 0);
     return;
   }
-  int out = (int)(((float)merge)/(float)voices_playing);
+
+  int out = (int)((((float)merge)/(float)voices_playing) + (float)(MAX_DAC)/2.0);
   analogWrite(AUDIO_PIN, out);
   return;
 }
@@ -367,11 +368,17 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   float level;
 
   if (duration <= config->a_ms) { // In attack section
+    if (config->a_ms == 0) { // No attack, direct jump to max level
+      return 1.0;
+    } 
     level = (float)duration/(float)config->a_ms;
     return level<0.0?0.0:level;
   }
 
   if (duration <= config->a_ms + config->d_ms) { //In decay
+    if (config->d_ms == 0) { // No decay, direct jump to sustain level
+      return config->s;
+    } 
     float a = (config->s - 1.0) / ((float) config->d_ms);
     float b = 1.0 - (((float)config->s - 1.0)/(float)config->d_ms) * (float)config->a_ms;
     level = a * duration + b; 
@@ -384,6 +391,9 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
 
 
   //In release
+  if (config->r_ms == 0) { // No release, direct jump to 0.0
+    return 0.0;
+  } 
   float a = -((float)config->s) / ((float)config->r_ms) ;
   float b = (float) config->s;
   level = a * release_duration + b;
