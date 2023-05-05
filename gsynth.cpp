@@ -254,6 +254,13 @@ void note_on(int channel, int pitch, int velocity) {
 
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
+  
+  //Look for duplicates
+  for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
+    if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].wave_frequency == wave_frequency)) {
+      return;
+    }
+  }
 
   //Find a free voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
@@ -280,7 +287,7 @@ void note_off(int channel, int pitch, int velocity) {
 
   //Find matching current voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
-    if (voices[voice_idx].wave_frequency == wave_frequency) {
+    if ((voices[voice_idx].wave_frequency == wave_frequency) && (voices[voice_idx].stop_ts == 0)) {
       voices[voice_idx].stop_ts = millis(); //Mark as "releasing.."
       char dbg[64];
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
