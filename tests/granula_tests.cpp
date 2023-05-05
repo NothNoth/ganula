@@ -83,6 +83,7 @@ void test_tone_generator() {
   for (int i = 20; i < 8000; i+= 100) {
     unsigned int used = tone_generate_square(buffer, i);
     TEST_ASSERT(used > 0, "Tone is properly generated");
+    printf("Used %d i %d max %d\n", used, i, MAX_SAMPLE_SIZE);
     TEST_ASSERT(used < MAX_SAMPLE_SIZE, "Generated tone fits in sample buffer");
   }
 
