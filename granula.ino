@@ -109,6 +109,8 @@ void gmode_switch(gmode_t new_mode) {
     break;
     case GMODE_ADSR:
     break;
+    case GMODE_MAX:
+    break;
   }
 
   //Setup new mode
@@ -131,6 +133,9 @@ void gmode_switch(gmode_t new_mode) {
       adsr_select_idx = 0;
       gsynth_get_adsr(&adsr);
       display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, true, false, false, false);
+    break;
+    case GMODE_MAX:
+      return;
     break;
   }
 
@@ -174,6 +179,10 @@ void pot_changed(int value) {
       display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, adsr_select_idx==0?true:false, adsr_select_idx==1?true:false, adsr_select_idx==2?true:false, adsr_select_idx==3?true:false);
 
     }
+    break;
+    case GMODE_RUN:
+    break;
+    case GMODE_MAX:
     break;
   }
 

@@ -258,7 +258,8 @@ void note_on(int channel, int pitch, int velocity) {
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].free_voice == true) {
       char dbg[64];
-      sprintf(dbg, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
+      snprintf(dbg, 64, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
+      dbg[63] = 0x00;
       debug_print(dbg);
 
       generate_sample(voice_idx, wave_frequency);

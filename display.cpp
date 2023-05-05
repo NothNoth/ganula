@@ -71,7 +71,8 @@ void display_sample(unsigned short* sample, unsigned short len, unsigned int fre
 
   if (freq != 0) {
     char txt[16];
-    sprintf(txt,"%dHz", freq);
+    snprintf(txt, 16, "%dHz", freq);
+    txt[15] = 0x00;
     display.setCursor(1,1);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);

@@ -11,7 +11,6 @@
 #define INPUT_PULLUP 0
 #define INPUT 0
 #define SSD1306_SWITCHCAPVCC 0
-#define OLED_ADDRESS 0
 #define WHITE 0
 #define BLACK 0
 
