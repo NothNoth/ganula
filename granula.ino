@@ -71,7 +71,7 @@ void loop() {
   display_loop();
   midi_loop();
   menu_loop();
-
+  gsynth_loop();
 
   if (mode == GMODE_CUSTOM_REC) {
     if (millis() - custom_rec_ts > CUSTOM_REC_SAMPLE_POINT_MS) {

@@ -21,6 +21,7 @@ typedef struct {
 
 
 void gsynth_setup();
+void gsynth_loop();
 void gsynth_enable(bool run);
 void gsynth_nextwave();
 void gsynth_set_adsr(int a, int d, float s, int r);

@@ -25,6 +25,7 @@ typedef struct {
   unsigned int wave_frequency;
   int start_ts;
   int stop_ts;
+  float adsr_level;
 
   unsigned int  sample_size;
   unsigned int sample_idx;
@@ -43,6 +44,9 @@ wave_t wave_form;
 bool gsynth_running = true;
 voice_buffer_t voices[MAX_VOICES];
 adsr_t adsr;
+bool in_dac;
+int dac_collisions;
+int adsr_errors;
 
 int pitchToFrequency(int pitch);
 bool generate_sample(int voice_idx, int wave_frequency);
@@ -50,7 +54,7 @@ void init_voices();
 void init_voice(int voice_idx);
 
 void refresh_display_buffer();
-float adsr_get_level(int duration, int release_duration, adsr_t *config);
+inline float adsr_get_level(int duration, int release_duration, adsr_t *config);
 
 void gsynth_setup() {
   analogWriteResolution(12);
@@ -65,6 +69,9 @@ void gsynth_setup() {
   adsr.d_ms = 100;
   adsr.s = 0.6;
   adsr.r_ms = 900;
+  in_dac = false;
+  adsr_errors = 0;
+  dac_collisions = 0;
 }
 
 void gsynth_enable(bool run) {
@@ -82,22 +89,64 @@ void init_voices() {
     init_voice(i);
   }
 }
-void init_voice(int voice_idx) {
+
+void init_voice(int voice_idx) {  
   voices[voice_idx].sample_size = 0;
   voices[voice_idx].free_voice = true;
 }
 
+void gsynth_loop() {
+  int current_ts = millis();
+
+  for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
+    if (voices[voice_idx].free_voice == true) {
+      continue;
+    }
+
+    if (voices[voice_idx].stop_ts == 0) {
+      //Voice is still playing
+      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
+    } else {
+      //Voice is being released
+      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
+
+      if (voices[voice_idx].adsr_level < 0.001) {
+        //Reached 0, time to free this voice
+        init_voice(voice_idx);
+        continue;
+      }   
+    }
+    if ((voices[voice_idx].adsr_level < 0.0) || (voices[voice_idx].adsr_level > 1.0)) {
+      adsr_errors ++;
+    }
+
+    char dbg[64];
+    snprintf(dbg, 64, "adsr voice %d: %f\n", voice_idx, voices[voice_idx].adsr_level);
+    dbg[63] = 0x00;
+    debug_print(dbg);
+  }
+}
+
 void dacoutput() {
   int i;
+  
   //Not in run mode? Don't play any sound.
   if (!gsynth_running) {
     return;
   }
 
+  if (in_dac == true) {
+    dac_collisions++;
+    return;
+  }
+  in_dac = true;
+
   float merge = 0.0;
   int voices_playing = 0;
-  int current_ts = millis();
   float half_dac_range = ((float)MAX_DAC)/2.0;
+
+  
+  //FIXME: probably a concurrent access issue on "voices"
   for (i = 0; i < MAX_VOICES; i++) {  
     float adsr_level;
 
@@ -105,23 +154,10 @@ void dacoutput() {
     if (voices[i].free_voice == true) {
       continue;
     }
-  
+
     voices_playing ++;
-
-    if (voices[i].stop_ts == 0) {
-      //Voice is still playing
-      adsr_level = adsr_get_level(current_ts - voices[i].start_ts, -1, &adsr);
-    } else {
-      //Voice is being released
-      adsr_level = adsr_get_level(current_ts - voices[i].start_ts, current_ts - voices[i].stop_ts, &adsr);
-      if (adsr_level < 0.001) {
-        //Reached 0, time to free this voice
-        init_voice(i);
-        continue;
-      }   
-    }
-
-    merge += (((float)voices[i].sample[voices[i].sample_idx]) - half_dac_range) * adsr_level ;
+    merge += (((float)voices[i].sample[voices[i].sample_idx]) - half_dac_range) * voices[i].adsr_level;
+   
     voices[i].sample_idx++;
 
     //Reach end of buffer
@@ -133,24 +169,43 @@ void dacoutput() {
   //No voices playing? Just output 0
   if (voices_playing == 0) {
     analogWrite(AUDIO_PIN, half_dac_range);
+    in_dac = false;
     return;
   }
 
   int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
+  
+  in_dac = false;
   return;
 }
 
 bool generate_sample(int voice_idx, int wave_frequency) {
+
   if (!gsynth_running) {
     debug_print("Won't generate sample: not running");
     return false;
   }
+
   if (voice_idx >= MAX_VOICES) {
     debug_print("Won't generate sample: invalid voice idx");
     return false;
   }
  
+  if (dac_collisions != 0) {
+    char dbg[64];
+    snprintf(dbg, 64, "DAC collisions: %d\n", dac_collisions); 
+    dbg[63] = 0x00;
+    debug_print(dbg);
+  }
+  if (adsr_errors != 0) {
+    char dbg[64];
+    snprintf(dbg, 64, "ADSR errors: %d\n", adsr_errors); 
+    dbg[63] = 0x00;
+    debug_print(dbg);
+  }
+
+  
   //Generate sample depending on waveform
   switch (wave_form) {
     case WAVE_SQUARE:
@@ -201,7 +256,7 @@ bool generate_sample(int voice_idx, int wave_frequency) {
   voices[voice_idx].free_voice = false;
 
   refresh_display_buffer();
-
+  
   return true;
 }
 
@@ -213,9 +268,11 @@ void note_on(int channel, int pitch, int velocity) {
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
   
+  
   //Look for duplicates
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].wave_frequency == wave_frequency)) {
+      
       return;
     }
   }
@@ -229,9 +286,11 @@ void note_on(int channel, int pitch, int velocity) {
       debug_print(dbg);
 
       generate_sample(voice_idx, wave_frequency);
+      
       return;
     }
   }
+  
 }
 
 void note_off(int channel, int pitch, int velocity) {
@@ -243,17 +302,21 @@ void note_off(int channel, int pitch, int velocity) {
 
   int voice_idx;
 
+  
   //Find matching current voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if ((voices[voice_idx].wave_frequency == wave_frequency) && (voices[voice_idx].stop_ts == 0)) {
       voices[voice_idx].stop_ts = millis(); //Mark as "releasing.."
       char dbg[64];
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
+      dbg[63] = 0x00;
       debug_print(dbg);
+
+     // init_voice(voice_idx); //FIXME
       return;
     }
-
   }
+  
   //debug_print("Note off not found for freq");
 }
 
@@ -271,7 +334,6 @@ wave_t gsynth_getwaveforms(int idx) {
   if (idx >= int(WAVE_MAX)) {
     return WAVE_MAX;
   }
-
   return wave_t(idx);
 }
 
@@ -289,7 +351,6 @@ void refresh_display_buffer() {
 
   memset(display_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(short));
   display_buffer_size = 0;
-
 
   for (display_buffer_size = 0; display_buffer_size < MAX_SAMPLE_SIZE; display_buffer_size++) {
     int used_voices = 0;
@@ -329,7 +390,7 @@ void gsynth_set_adsr(int a, int d, float s, int r) {
   adsr.r_ms = r;
 }
 
-float adsr_get_level(int duration, int release_duration, adsr_t *config) {
+inline float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   float level;
 
   if (duration <= config->a_ms) { // In attack section
@@ -353,7 +414,6 @@ float adsr_get_level(int duration, int release_duration, adsr_t *config) {
   if (release_duration == -1) { /// In sustain
     return config->s;
   }
-
 
   //In release
   if (config->r_ms == 0) { // No release, direct jump to 0.0
