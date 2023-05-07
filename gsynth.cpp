@@ -141,7 +141,10 @@ void dacoutput() {
     }
 
     voices_playing ++;
-    merge += ((voiceptr->sample[voiceptr->sample_idx] - half_dac_range) * voiceptr->adsr_level_prc) / 100.0; //FIXME use power of 2 and bitshift
+    int value = voiceptr->sample[voiceptr->sample_idx];
+    value -= half_dac_range;
+    value = (int)((value * (float)voiceptr->adsr_level_prc) / 100.0);
+    merge += value;
    
     voiceptr->sample_idx++;
 
@@ -156,7 +159,6 @@ void dacoutput() {
     analogWrite(AUDIO_PIN, half_dac_range);
     return;
   }
-
   int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
   

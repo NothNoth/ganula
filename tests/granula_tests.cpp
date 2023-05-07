@@ -166,7 +166,7 @@ void test_poly() {
 
   gsynth_setup();
   gsynth_enable(true);
-  gsynth_set_adsr(0, 0, 1.0, 0);
+  gsynth_set_adsr(0, 0, 100, 0);
   TEST_SUB("Test: gsynth dacoutput...");
   gsynth_select_wave(WAVE_SAW);
 
@@ -174,6 +174,7 @@ void test_poly() {
 
   debug_set_write_file("poly_test.csv");
   for (int i = 0; i < 10000; i++) {
+    gsynth_loop();
     if (i == 2500) {
       note_on(1, 60, 120);
     }
@@ -183,7 +184,6 @@ void test_poly() {
     if (i == 7000) {
       note_off(1, 40, 0);
     }
-
 
     usleep(1000 * 1000.0/(float)SAMPLE_RATE);
     dacoutput();

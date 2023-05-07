@@ -169,10 +169,10 @@ void pot_changed(int value) {
           adsr.d_ms = (int)((float)value *1000.0/(float)POT_RANGE);
         break;
         case 2: //Sustain
-          adsr.s = ((float)value/(float)POT_RANGE);
+          adsr.s = (int)((float)value *100.0/(float)POT_RANGE);
         break;
         case 3: //Release
-          adsr.r_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+          adsr.r_ms = (int)((float)value *2000.0/(float)POT_RANGE);
         break;
       }
       gsynth_set_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);

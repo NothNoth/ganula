@@ -196,7 +196,7 @@ void display_text(char *text, int line, bool highlight) {
   display.display();
 }
 
-void display_adsr(int a, int d, float s, int r, bool select_a, bool select_d, bool select_s, bool select_r) {
+void display_adsr(int a, int d, int s, int r, bool select_a, bool select_d, bool select_s, bool select_r) {
   int margin = 10;
 
   display.clearDisplay();
@@ -215,12 +215,12 @@ void display_adsr(int a, int d, float s, int r, bool select_a, bool select_d, bo
   display.setCursor(1, 18);
   display.setTextColor(select_s?BLACK:WHITE, select_s?WHITE:BLACK);
   display.print("S");
-  display.drawFastHLine(margin, 21, (int)(s * (128.0 - margin)), WHITE);
+  display.drawFastHLine(margin, 21, (int)(s * (128.0 - margin)/100.0), WHITE);
  
   display.setCursor(1, 26);
   display.setTextColor(select_r?BLACK:WHITE, select_r?WHITE:BLACK);
   display.print("R");
-  display.drawFastHLine(margin, 29, (int)(r * (128.0 - margin)/1000.0), WHITE);
+  display.drawFastHLine(margin, 29, (int)(r * (128.0 - margin)/2000.0), WHITE);
 
   display.display();
 }
