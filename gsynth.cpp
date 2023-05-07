@@ -25,7 +25,7 @@ typedef struct {
   unsigned int wave_frequency;
   int start_ts;
   int stop_ts;
-  float adsr_level;
+  volatile float adsr_level;
 
   unsigned int  sample_size;
   unsigned int sample_idx;
@@ -148,7 +148,6 @@ void dacoutput() {
   
   //FIXME: probably a concurrent access issue on "voices"
   for (i = 0; i < MAX_VOICES; i++) {  
-    float adsr_level;
 
     //Voice is inactive, skip
     if (voices[i].free_voice == true) {
