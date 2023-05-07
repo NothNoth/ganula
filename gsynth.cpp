@@ -352,7 +352,16 @@ void refresh_display_buffer() {
   }
 }
 
-void gsynth_set_adsr(int a, int d, float s, int r) {
+void gsynth_set_adsr(int a, int d, int s, int r) {
+  if (a < 0)
+    a = 0;
+  if (d < 0)
+    d = 0;
+  if ((s < 0) || (s >100))
+    s = 100;
+  if (r < 0)
+    r = 0;
+
   adsr.a_ms = a;
   adsr.d_ms = d;
   adsr.s = s;
@@ -374,8 +383,8 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
     if (config->d_ms == 0) { // No decay, direct jump to sustain level
       return config->s;
     } 
-    unsigned int a = ((int)config->s - 100) / ((float) config->d_ms);
-    unsigned int b = 100 - (((int)config->s - 100)/(float)config->d_ms) * config->a_ms;
+    int a = (100 - config->s) / ((float) (config->a_ms - config->d_ms));
+    int b = config->s - a * config->d_ms;
     level = a * duration + b; 
     return level<0?0:level;
   }
@@ -385,13 +394,12 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
   }
 
   //In release
-  if (config->r_ms == 0) { // No release, direct jump to 0.0
+  if (config->r_ms == 0) { // No release, direct jump to 0
     return 0;
   } 
-  unsigned int a = -((int)config->s) / ((float)config->r_ms) ;
-  unsigned int b = (int) config->s;
+  float a = -(((float)config->s / ((float)config->r_ms))) ;
+  int b = config->s;
   level = a * release_duration + b;
-
   return level<0?0:level;
 }
 

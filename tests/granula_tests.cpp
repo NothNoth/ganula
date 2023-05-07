@@ -203,34 +203,34 @@ void test_adsr() {
   TEST_START("ADSR");
   adsr.a_ms = 100;
   adsr.d_ms = 50;
-  adsr.s = 0.7;
-  adsr.r_ms = 1200;
+  adsr.s = 70;
+  adsr.r_ms = 200;
 
 //Dump adsr curve
   FILE * f = fopen("adsr_test.csv", "wb+");
   for (int ts = 0; ts < 500; ts+=10) {
-    fprintf(f, "%d;%f\n", ts, adsr_get_level(ts, ts<250?-1:ts-250, &adsr));
+    fprintf(f, "%d;%d\n", ts, adsr_get_level(ts, ts<250?-1:ts-250, &adsr));
   }
   fclose(f);
 
 //Test curve with a scenario
   level = adsr_get_level(0, 0, &adsr);
-  TEST_ASSERT(abs(level - 0.0) <= EPSILON, "Attack starts at level 0");
+  TEST_ASSERT(level == 0, "Attack starts at level 0");
 
   level = adsr_get_level(adsr.a_ms, 0, &adsr);
-  TEST_ASSERT(abs(level - 1.0) <= EPSILON, "Attack ends at level 1.0");
+  TEST_ASSERT(level == 100, "Attack ends at level 100");
 
   level = adsr_get_level(adsr.a_ms + adsr.d_ms, 0, &adsr);
-  TEST_ASSERT(abs(level - adsr.s) <= EPSILON, "Sustain ends at level 'sustain'");
+  TEST_ASSERT(level == adsr.s, "Sustain ends at level 'sustain'");
 
-  level = adsr_get_level(1000, 1, &adsr); //just released
-  TEST_ASSERT(abs(level - adsr.s) <= EPSILON, "Release starts at level 'sustain'");
+  level = adsr_get_level(1000, 0, &adsr); //just released
+  TEST_ASSERT(level == adsr.s, "Release starts at level 'sustain'");
 
   level = adsr_get_level(1000, adsr.r_ms, &adsr); //fully released
-  TEST_ASSERT(abs(level - 0.0) <= EPSILON, "Release ends at level 0.0");
+  TEST_ASSERT(level == 0, "Release ends at level 0");
 
   level = adsr_get_level(1000, 2*adsr.r_ms, &adsr); //very fully released
-  TEST_ASSERT(abs(level - 0.0) <= EPSILON, "After full release, level is still at 0.0");
+  TEST_ASSERT(level == 0, "After full release, level is still at 0");
 
   TEST_END("ADSR");
 }

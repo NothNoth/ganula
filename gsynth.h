@@ -24,7 +24,7 @@ void gsynth_setup();
 void gsynth_loop();
 void gsynth_enable(bool run);
 void gsynth_nextwave();
-void gsynth_set_adsr(int a, int d, float s, int r);
+void gsynth_set_adsr(int a, int d, int s, int r);
 void gsynth_get_adsr(adsr_t *adsr);
 void dacoutput();
 void note_on(int channel, int pitch, int velocity);
