@@ -24,7 +24,7 @@ typedef struct {
 
   unsigned int wave_frequency;
   int start_ts;
-  int stop_ts;
+  volatile int stop_ts;
   volatile float adsr_level;
 
   unsigned int  sample_size;
@@ -42,11 +42,8 @@ unsigned int display_buffer_size;
 
 wave_t wave_form;
 bool gsynth_running = true;
-voice_buffer_t voices[MAX_VOICES];
+volatile voice_buffer_t voices[MAX_VOICES];
 adsr_t adsr;
-bool in_dac;
-int dac_collisions;
-int adsr_errors;
 
 int pitchToFrequency(int pitch);
 bool generate_sample(int voice_idx, int wave_frequency);
@@ -60,7 +57,7 @@ void gsynth_setup() {
   analogWriteResolution(12);
   analogWrite(AUDIO_PIN, 0);
   wave_form = WAVE_SQUARE;
-  memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
+  memset((void*)voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
   gsynth_running = true;
 
   init_voices();
@@ -69,9 +66,6 @@ void gsynth_setup() {
   adsr.d_ms = 100;
   adsr.s = 0.6;
   adsr.r_ms = 900;
-  in_dac = false;
-  adsr_errors = 0;
-  dac_collisions = 0;
 }
 
 void gsynth_enable(bool run) {
@@ -83,7 +77,7 @@ void gsynth_nextwave() {
 }
 
 void init_voices() {
-  memset(voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
+  memset((void*)voices, 0x00, MAX_VOICES * sizeof(voice_buffer_t));
 
   for (int i = 0; i < MAX_VOICES; i++) {
     init_voice(i);
@@ -117,13 +111,14 @@ void gsynth_loop() {
       }   
     }
     if ((voices[voice_idx].adsr_level < 0.0) || (voices[voice_idx].adsr_level > 1.0)) {
-      adsr_errors ++;
+      voices[voice_idx].adsr_level = 0.0;
     }
-
+/*
     char dbg[64];
     snprintf(dbg, 64, "adsr voice %d: %f\n", voice_idx, voices[voice_idx].adsr_level);
     dbg[63] = 0x00;
     debug_print(dbg);
+    */
   }
 }
 
@@ -135,19 +130,11 @@ void dacoutput() {
     return;
   }
 
-  if (in_dac == true) {
-    dac_collisions++;
-    return;
-  }
-  in_dac = true;
-
   float merge = 0.0;
   int voices_playing = 0;
   float half_dac_range = ((float)MAX_DAC)/2.0;
 
-  
-  //FIXME: probably a concurrent access issue on "voices"
-  for (i = 0; i < MAX_VOICES; i++) {  
+    for (i = 0; i < MAX_VOICES; i++) {  
 
     //Voice is inactive, skip
     if (voices[i].free_voice == true) {
@@ -168,14 +155,12 @@ void dacoutput() {
   //No voices playing? Just output 0
   if (voices_playing == 0) {
     analogWrite(AUDIO_PIN, half_dac_range);
-    in_dac = false;
     return;
   }
 
   int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
   
-  in_dac = false;
   return;
 }
 
@@ -190,20 +175,6 @@ bool generate_sample(int voice_idx, int wave_frequency) {
     debug_print("Won't generate sample: invalid voice idx");
     return false;
   }
- 
-  if (dac_collisions != 0) {
-    char dbg[64];
-    snprintf(dbg, 64, "DAC collisions: %d\n", dac_collisions); 
-    dbg[63] = 0x00;
-    debug_print(dbg);
-  }
-  if (adsr_errors != 0) {
-    char dbg[64];
-    snprintf(dbg, 64, "ADSR errors: %d\n", adsr_errors); 
-    dbg[63] = 0x00;
-    debug_print(dbg);
-  }
-
   
   //Generate sample depending on waveform
   switch (wave_form) {

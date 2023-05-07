@@ -9,10 +9,10 @@
 #include <string.h>
 
 
-void extrapolate(unsigned short *src, int src_size, unsigned short *dest, int dest_size);
+void extrapolate(unsigned short *src, int src_size, volatile unsigned short *dest, int dest_size);
 
 
-unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequency) {
+unsigned int tone_generate_square(volatile unsigned short*buffer, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -31,7 +31,7 @@ unsigned int tone_generate_square(unsigned short*buffer, unsigned short frequenc
 }
 
 
-unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) {
+unsigned int tone_generate_saw(volatile unsigned short*buffer, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -40,7 +40,7 @@ unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) 
     return 0;
   }
 
-  memset(buffer, 0x00, sample_count * sizeof(short));
+  memset((void*)buffer, 0x00, sample_count * sizeof(short));
   float increment = (float)(MAX_DAC)/(float)sample_count;
   for (i = 0; i < sample_count; i++) {
     buffer[i] = MAX_DAC - (unsigned short)((float)(i)*increment);
@@ -49,7 +49,7 @@ unsigned int tone_generate_saw(unsigned short*buffer, unsigned short frequency) 
 }
 
 
-unsigned int tone_generate_isaw(unsigned short*buffer, unsigned short frequency) {
+unsigned int tone_generate_isaw(volatile unsigned short*buffer, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -58,7 +58,7 @@ unsigned int tone_generate_isaw(unsigned short*buffer, unsigned short frequency)
     return 0;
   }
 
-  memset(buffer, 0x00, sample_count * sizeof(short));
+  memset((void*)buffer, 0x00, sample_count * sizeof(short));
   float increment = (float)(MAX_DAC)/(float)sample_count;
   for (i = 0; i < sample_count; i++) {
     buffer[i] = (unsigned short)((float)(i)*increment);
@@ -66,7 +66,7 @@ unsigned int tone_generate_isaw(unsigned short*buffer, unsigned short frequency)
   return sample_count;
 }
 
-unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short frequency) {
+unsigned int tone_generate_triangle(volatile unsigned short*buffer, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -75,7 +75,7 @@ unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short freque
     return 0;
   }
 
-  memset(buffer, 0x00, sample_count * sizeof(short));
+  memset((void*)buffer, 0x00, sample_count * sizeof(short));
   float increment = 2*(float)(MAX_DAC)/(float)sample_count;
   for (i = 0; i < sample_count/2; i++) {
     buffer[i] = (unsigned short)((float)(i)*increment);
@@ -86,7 +86,7 @@ unsigned int tone_generate_triangle(unsigned short*buffer, unsigned short freque
   return sample_count;
 }
 
-unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) {
+unsigned int tone_generate_sin(volatile unsigned short*buffer, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -95,7 +95,7 @@ unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) 
     return 0;
   }
 
-  memset(buffer, 0x00, sample_count*sizeof(short));
+  memset((void*)buffer, 0x00, sample_count*sizeof(short));
   int half_range = (int)(MAX_DAC/2.0);
   for (i = 0; i < sample_count; i++) {
     buffer[i] = sin(i*2*3.1416/sample_count) * half_range + half_range;//scale and center
@@ -104,7 +104,7 @@ unsigned int tone_generate_sin(unsigned short*buffer, unsigned short frequency) 
   return sample_count;
 }
 
-unsigned int tone_generate_custom(unsigned short*buffer, unsigned short*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
+unsigned int tone_generate_custom(volatile unsigned short*buffer, unsigned short*custom_wave, unsigned int custom_wave_size, unsigned short frequency) {
   int i;
 
   //Since we're playing at given sample rate, we will be using sample_count space on the buffer
@@ -113,7 +113,7 @@ unsigned int tone_generate_custom(unsigned short*buffer, unsigned short*custom_w
     return 0;
   }
 
-  memset(buffer, 0x00, sample_count*sizeof(short));
+  memset((void*)buffer, 0x00, sample_count*sizeof(short));
 
   //Now map custom_wave of size custom_wave_size
   // to buffer of size sample_count
@@ -122,10 +122,10 @@ unsigned int tone_generate_custom(unsigned short*buffer, unsigned short*custom_w
   return sample_count;
 }
 
-void extrapolate(unsigned short *src, int src_size, unsigned short *dest, int dest_size) {
+void extrapolate(unsigned short *src, int src_size, volatile unsigned short *dest, int dest_size) {
   int i;
 
-  memset(dest, 0x00, dest_size*sizeof(short));
+  memset((void*)dest, 0x00, dest_size*sizeof(short));
 
   if (dest_size > src_size) {
     float scale = dest_size/src_size;
