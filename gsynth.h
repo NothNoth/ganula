@@ -15,7 +15,7 @@ typedef enum {
 typedef struct {
   int a_ms; //Attack in ms
   int d_ms; //Decay in ms
-  float s;    //Sustain level [0.0-1.0]
+  int s;    //Sustain level [0-100]
   int r_ms; //Release is ms
 } adsr_t;
 
@@ -35,6 +35,6 @@ void gsynth_save_custom(unsigned short *customrec, int len);
 void gsynth_select_wave(wave_t w);
 
 //For tests only
-float adsr_get_level(int duration, int release_duration, adsr_t *config);
+unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config);
 
 #endif

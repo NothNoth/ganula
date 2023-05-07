@@ -25,7 +25,7 @@ typedef struct {
   unsigned int wave_frequency;
   int start_ts;
   volatile int stop_ts;
-  volatile float adsr_level;
+  volatile unsigned int adsr_level_prc;
 
   unsigned int  sample_size;
   unsigned int sample_idx;
@@ -51,7 +51,6 @@ void init_voices();
 void init_voice(int voice_idx);
 
 void refresh_display_buffer();
-inline float adsr_get_level(int duration, int release_duration, adsr_t *config);
 
 void gsynth_setup() {
   analogWriteResolution(12);
@@ -64,7 +63,7 @@ void gsynth_setup() {
   gsynth_select_wave(WAVE_SIN);
   adsr.a_ms = 500;
   adsr.d_ms = 100;
-  adsr.s = 0.6;
+  adsr.s = 50;
   adsr.r_ms = 900;
 }
 
@@ -99,23 +98,23 @@ void gsynth_loop() {
 
     if (voices[voice_idx].stop_ts == 0) {
       //Voice is still playing
-      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
+      voices[voice_idx].adsr_level_prc = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
     } else {
       //Voice is being released
-      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
+      voices[voice_idx].adsr_level_prc = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
 
-      if (voices[voice_idx].adsr_level < 0.001) {
+      if (voices[voice_idx].adsr_level_prc == 0) {
         //Reached 0, time to free this voice
         init_voice(voice_idx);
         continue;
       }   
     }
-    if ((voices[voice_idx].adsr_level < 0.0) || (voices[voice_idx].adsr_level > 1.0)) {
-      voices[voice_idx].adsr_level = 0.0;
+    if  (voices[voice_idx].adsr_level_prc > 100) {
+      voices[voice_idx].adsr_level_prc = 0;
     }
 /*
     char dbg[64];
-    snprintf(dbg, 64, "adsr voice %d: %f\n", voice_idx, voices[voice_idx].adsr_level);
+    snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level_prc);
     dbg[63] = 0x00;
     debug_print(dbg);
     */
@@ -130,25 +129,25 @@ void dacoutput() {
     return;
   }
 
-  float merge = 0.0;
+  int merge = 0;
   int voices_playing = 0;
-  float half_dac_range = ((float)MAX_DAC)/2.0;
+  unsigned int half_dac_range = MAX_DAC>>1;
 
-    for (i = 0; i < MAX_VOICES; i++) {  
-
+  for (i = 0; i < MAX_VOICES; i++) {  
+    volatile voice_buffer_t * voiceptr = &voices[i];
     //Voice is inactive, skip
-    if (voices[i].free_voice == true) {
+    if (voiceptr->free_voice == true) {
       continue;
     }
 
     voices_playing ++;
-    merge += (((float)voices[i].sample[voices[i].sample_idx]) - half_dac_range) * voices[i].adsr_level;
+    merge += ((voiceptr->sample[voiceptr->sample_idx] - half_dac_range) * voiceptr->adsr_level_prc) / 100.0; //FIXME use power of 2 and bitshift
    
-    voices[i].sample_idx++;
+    voiceptr->sample_idx++;
 
     //Reach end of buffer
-    if (voices[i].sample_idx >= voices[i].sample_size) {
-      voices[i].sample_idx = 0; //restart
+    if (voiceptr->sample_idx >= voiceptr->sample_size) {
+      voiceptr->sample_idx = 0; //restart
     }
   }
 
@@ -360,25 +359,25 @@ void gsynth_set_adsr(int a, int d, float s, int r) {
   adsr.r_ms = r;
 }
 
-inline float adsr_get_level(int duration, int release_duration, adsr_t *config) {
-  float level;
+unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) {
+  unsigned int level;
 
   if (duration <= config->a_ms) { // In attack section
     if (config->a_ms == 0) { // No attack, direct jump to max level
-      return 1.0;
+      return 100;
     } 
-    level = (float)duration/(float)config->a_ms;
-    return level<0.0?0.0:level;
+    level = (int)(duration*100/(float)config->a_ms);
+    return level<0?0:level;
   }
 
   if (duration <= config->a_ms + config->d_ms) { //In decay
     if (config->d_ms == 0) { // No decay, direct jump to sustain level
       return config->s;
     } 
-    float a = (config->s - 1.0) / ((float) config->d_ms);
-    float b = 1.0 - (((float)config->s - 1.0)/(float)config->d_ms) * (float)config->a_ms;
+    unsigned int a = ((int)config->s - 100) / ((float) config->d_ms);
+    unsigned int b = 100 - (((int)config->s - 100)/(float)config->d_ms) * config->a_ms;
     level = a * duration + b; 
-    return level<0.0?0.0:level;
+    return level<0?0:level;
   }
 
   if (release_duration == -1) { /// In sustain
@@ -387,13 +386,13 @@ inline float adsr_get_level(int duration, int release_duration, adsr_t *config) 
 
   //In release
   if (config->r_ms == 0) { // No release, direct jump to 0.0
-    return 0.0;
+    return 0;
   } 
-  float a = -((float)config->s) / ((float)config->r_ms) ;
-  float b = (float) config->s;
+  unsigned int a = -((int)config->s) / ((float)config->r_ms) ;
+  unsigned int b = (int) config->s;
   level = a * release_duration + b;
 
-  return level<0.0?0.0:level;
+  return level<0?0:level;
 }
 
 void gsynth_get_adsr(adsr_t *adsrptr) {
