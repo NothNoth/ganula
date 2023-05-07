@@ -38,7 +38,7 @@ unsigned int custom_wave_size;
 unsigned short display_buffer[MAX_SAMPLE_SIZE];
 unsigned int display_buffer_size;
 
-#define MAX_VOICES 8
+#define MAX_VOICES 1
 
 wave_t wave_form;
 bool gsynth_running = true;
@@ -61,10 +61,7 @@ void gsynth_setup() {
 
   init_voices();
   gsynth_select_wave(WAVE_SIN);
-  adsr.a_ms = 500;
-  adsr.d_ms = 100;
-  adsr.s = 50;
-  adsr.r_ms = 900;
+  gsynth_set_adsr(95, 185, 80, 220);
 }
 
 void gsynth_enable(bool run) {
@@ -178,46 +175,52 @@ bool generate_sample(int voice_idx, int wave_frequency) {
   }
   
   //Generate sample depending on waveform
+  char dbg[64];
+  snprintf(dbg, 64, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
+  dbg[63] = 0x00;
+
   switch (wave_form) {
     case WAVE_SQUARE:
     {
       voices[voice_idx].sample_size = tone_generate_square(voices[voice_idx].sample, wave_frequency);
-      debug_print("Switch to square.");
+      strcat(dbg, " (square)");
     }
     break;
     case WAVE_SAW:
     {
       voices[voice_idx].sample_size = tone_generate_saw(voices[voice_idx].sample, wave_frequency);
-      debug_print("Switch to saw.");
+      strcat(dbg, " (saw)");
     }
     break;
     case WAVE_ISAW:
     {
       voices[voice_idx].sample_size = tone_generate_isaw(voices[voice_idx].sample, wave_frequency);
-      debug_print("Switch to isaw.");
+      strcat(dbg, " (isaw)");
     }
     break;
     case WAVE_SIN:
     {
       voices[voice_idx].sample_size = tone_generate_sin(voices[voice_idx].sample, wave_frequency);
-      debug_print("Switch to sin.");
+      strcat(dbg, " (sin)");
     }
     break;
     case WAVE_TRIANGLE:
     {
       voices[voice_idx].sample_size = tone_generate_triangle(voices[voice_idx].sample, wave_frequency);
-      debug_print("Switch to triangle.");
+      strcat(dbg, " (triangle)");
     }
     break;
     case WAVE_CUSTOM:
     {
       voices[voice_idx].sample_size = tone_generate_custom(voices[voice_idx].sample, custom_wave, custom_wave_size, wave_frequency);
-      debug_print("Switch to Custom.");
+      strcat(dbg, " (custom)");
     }
     break;
     case WAVE_MAX:
     break;
   }
+  debug_print(dbg);
+
   if (voices[voice_idx].sample_size == 0) {
     return false;
   }
@@ -235,15 +238,12 @@ void note_on(int channel, int pitch, int velocity) {
   if (gsynth_running == false) {
     return;
   }
-
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
-  
   
   //Look for duplicates
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].wave_frequency == wave_frequency)) {
-      
       return;
     }
   }
@@ -251,28 +251,19 @@ void note_on(int channel, int pitch, int velocity) {
   //Find a free voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].free_voice == true) {
-      char dbg[64];
-      snprintf(dbg, 64, "Voice %d playing freq %dHz", voice_idx, wave_frequency);
-      dbg[63] = 0x00;
-      debug_print(dbg);
-
       generate_sample(voice_idx, wave_frequency);
-      
       return;
     }
   }
-  
 }
 
 void note_off(int channel, int pitch, int velocity) {
+  int voice_idx;
   int wave_frequency = pitchToFrequency(pitch);
 
   if (gsynth_running == false) {
     return;
   }
-
-  int voice_idx;
-
   
   //Find matching current voice slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
@@ -282,13 +273,9 @@ void note_off(int channel, int pitch, int velocity) {
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       dbg[63] = 0x00;
       debug_print(dbg);
-
-     // init_voice(voice_idx); //FIXME
       return;
     }
   }
-  
-  //debug_print("Note off not found for freq");
 }
 
 int pitchToFrequency(int pitch) {
@@ -368,6 +355,11 @@ void gsynth_set_adsr(int a, int d, int s, int r) {
   adsr.d_ms = d;
   adsr.s = s;
   adsr.r_ms = r;
+
+  char dbg[64];
+  snprintf(dbg, 64, "Set adsr to: %dms/%dms/%d/%dms", adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);
+  dbg[63] = 0x00;
+  debug_print(dbg);
 }
 
 unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) {
