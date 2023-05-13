@@ -61,7 +61,7 @@ void gsynth_setup() {
 
   init_voices();
   gsynth_select_wave(WAVE_SIN);
-  gsynth_set_adsr(95, 185, 80, 220);
+  gsynth_set_adsr(50, 18, 80, 0);
 }
 
 void gsynth_enable(bool run) {
@@ -240,21 +240,31 @@ void note_on(int channel, int pitch, int velocity) {
   }
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
+  int voice_free = -1;
   
-  //Look for duplicates
+  //Look for duplicates and find a free slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].wave_frequency == wave_frequency)) {
       return;
     }
+    if ((voice_free == -1) && (voices[voice_idx].free_voice == true)) {
+      voice_free = voice_idx;
+    }
   }
 
-  //Find a free voice slot
-  for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
-    if (voices[voice_idx].free_voice == true) {
-      generate_sample(voice_idx, wave_frequency);
+  //No more free slots
+  if (voice_free == -1) {
+    if (MAX_VOICES == 1) {
+      //Violently release the only slot and re-use
+      init_voice(0);
+      voice_free = 0;
+    } else {
       return;
     }
   }
+
+  //Use a free voice slot
+  generate_sample(voice_free, wave_frequency);
 }
 
 void note_off(int channel, int pitch, int velocity) {

@@ -24,8 +24,6 @@ typedef enum {
   menu_tag_waveform_saw = 6,
   menu_tag_waveform_custom1 = 7,
   menu_tag_waveform_isaw = 8,
-
-
 } menu_tag_t;
 
 typedef struct 
@@ -36,6 +34,7 @@ typedef struct
 
 typedef struct {
   menu_item_t items[MAX_MENU_ITEMS];
+  int menu_items_count;
   int menu_idx;
 } menu_t;
 
@@ -52,6 +51,7 @@ void menu_setup() {
 
 //Root menu
   root.menu_idx = 0;
+  root.menu_items_count = 3;
   memset(root.items, 0x00, MAX_MENU_ITEMS * sizeof(menu_item_t));
   strcpy(root.items[0].name, "Waveform    ");
   root.items[0].tag = menu_tag_waveform;
@@ -59,11 +59,10 @@ void menu_setup() {
   root.items[1].tag = menu_tag_waveform_new;
   strcpy(root.items[2].name, "Enveloppe   ");
   root.items[2].tag = menu_tag_enveloppe;
-  strcpy(root.items[3].name, "blop        ");
-  root.items[3].tag = menu_tag_enveloppe;
   
 //Waveforms menu
   waveforms.menu_idx = 0;
+  waveforms.menu_items_count = 6;
   memset(waveforms.items, 0x00, MAX_MENU_ITEMS * sizeof(menu_item_t));
   strcpy(waveforms.items[0].name, "Sin     ");
   waveforms.items[0].tag = menu_tag_waveform_sin;
@@ -94,19 +93,24 @@ void menu_flip() {
 
 void menu_refresh() {
   int next_idx, next_next_idx;
+  
   if (menu_shown == false) {
     return;
   }
 
+  //Line 1
   display_clear();
   next_idx = current->menu_idx + 1;
   next_next_idx = next_idx + 1;
 
+  //Line 2
   display_text(current->items[current->menu_idx].name, 0, true);
-  if (next_idx < MAX_MENU_ITEMS) {
+  if (next_idx < current->menu_items_count) {
     display_text(current->items[next_idx].name, 1, false);
   }
-  if (next_next_idx < MAX_MENU_ITEMS) {
+
+  //Line 3
+  if (next_next_idx < current->menu_items_count) {
     display_text(current->items[next_next_idx].name, 2, false);
   }
   
@@ -163,7 +167,7 @@ void menu_pot(int value) {
     return;
   }
   // (512 -> MAX_ITEMS)
-  int new_idx = value * (float)(MAX_MENU_ITEMS) / 512.0;
+  int new_idx = value * (float)(current->menu_items_count) / 512.0;
   if (new_idx == current->menu_idx) {
     return;
   }
