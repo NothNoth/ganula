@@ -92,28 +92,49 @@ void menu_flip() {
 }
 
 void menu_refresh() {
-  int next_idx, next_next_idx;
-  
+  int line1_idx, line2_idx, line3_idx;
+  int selected_idx;
+
   if (menu_shown == false) {
     return;
   }
 
-  //Line 1
+  //Ideal default behaviour
+  line1_idx = current->menu_idx;
+  line2_idx = current->menu_idx+1;
+  line3_idx = current->menu_idx+2;
+  selected_idx = line1_idx;
+
+  //Line3 exceeds menu length, readjust
+  if ((line3_idx >= current->menu_items_count) && (line1_idx > 0)) {
+    line1_idx--;
+    line2_idx--;
+    line3_idx--;
+    selected_idx = line2_idx;
+  }
+  
+  //Line3 still exceeds menu length, readjust
+  if ((line3_idx >= current->menu_items_count) && (line1_idx > 0)) {
+    line1_idx--;
+    line2_idx--;
+    line3_idx--;
+    selected_idx = line3_idx;
+  }
+
   display_clear();
-  next_idx = current->menu_idx + 1;
-  next_next_idx = next_idx + 1;
+
+  //Line 1
+  display_text(current->items[line1_idx].name, 0, line1_idx == selected_idx?true:false);
 
   //Line 2
-  display_text(current->items[current->menu_idx].name, 0, true);
-  if (next_idx < current->menu_items_count) {
-    display_text(current->items[next_idx].name, 1, false);
+  if (line2_idx < current->menu_items_count) {
+    display_text(current->items[line2_idx].name, 1,  line2_idx == selected_idx?true:false);
   }
 
   //Line 3
-  if (next_next_idx < current->menu_items_count) {
-    display_text(current->items[next_next_idx].name, 2, false);
+  if (line3_idx < current->menu_items_count) {
+    display_text(current->items[line3_idx].name, 2,  line3_idx == selected_idx?true:false);
   }
-  
 }
 
 void menu_select() {
