@@ -17,6 +17,7 @@ typedef enum {
   menu_tag_waveform = 0,
   menu_tag_waveform_new = 1,
   menu_tag_enveloppe = 2,
+  menu_tag_reset = 9,
 
   menu_tag_waveform_sin = 3,
   menu_tag_waveform_square = 4,
@@ -51,7 +52,7 @@ void menu_setup() {
 
 //Root menu
   root.menu_idx = 0;
-  root.menu_items_count = 3;
+  root.menu_items_count = 4;
   memset(root.items, 0x00, MAX_MENU_ITEMS * sizeof(menu_item_t));
   strcpy(root.items[0].name, "Waveform    ");
   root.items[0].tag = menu_tag_waveform;
@@ -59,6 +60,8 @@ void menu_setup() {
   root.items[1].tag = menu_tag_waveform_new;
   strcpy(root.items[2].name, "Enveloppe   ");
   root.items[2].tag = menu_tag_enveloppe;
+  strcpy(root.items[3].name, "Reset   ");
+  root.items[3].tag = menu_tag_reset;
   
 //Waveforms menu
   waveforms.menu_idx = 0;
@@ -153,6 +156,10 @@ void menu_select() {
     case menu_tag_enveloppe:
       gmode_switch(GMODE_ADSR);
       menu_flip();
+      return;
+    break;
+    case menu_tag_reset:
+      reset();
       return;
     break;
     case menu_tag_waveform_sin:

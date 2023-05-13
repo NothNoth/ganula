@@ -22,6 +22,18 @@ int last_pot_value;
 #define CUSTOM_REC_SAMPLE_SIZE 128
 #define CUSTOM_REC_SAMPLE_POINT_MS 120
 #define CUSTOM_REC_SAMPLE_POT_MARGIN 128
+
+
+//Reset helpers
+#define SYSRESETREQ    (1<<2)
+#define VECTKEY        (0x05fa0000UL)
+#define VECTKEY_MASK   (0x0000ffffUL)
+#define AIRCR          (*(uint32_t*)0xe000ed0cUL) // fixed arch-defined address
+#define REQUEST_EXTERNAL_RESET (AIRCR=(AIRCR&VECTKEY_MASK)|VECTKEY|SYSRESETREQ)
+
+
+
+
 int custom_rec_idx;
 int custom_rec_ts;
 unsigned short customrecsample[CUSTOM_REC_SAMPLE_SIZE];
@@ -207,4 +219,9 @@ void bt2_pressed(int unused) {
     return;
   }
   menu_select();
+}
+
+
+void reset() {
+  REQUEST_EXTERNAL_RESET;
 }

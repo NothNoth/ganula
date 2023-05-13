@@ -11,5 +11,6 @@ typedef enum {
 
 void gmode_switch(gmode_t new_mode);
 gmode_t gmode_get();
+void reset();
 
 #endif
