@@ -312,39 +312,48 @@ void gsynth_select_wave(wave_t w) {
   wave_form = w;
 }
 
-
+//FIXME: 
+// 1 : find the longest voice size and use it as display size
+// 2 : fill with every voice and loop if voice has reached its end
 void refresh_display_buffer() {
-  int voice_idx;
-  bool got_sound = false;
+  int work_buffer[MAX_SAMPLE_SIZE];
+  unsigned int half_dac_range = MAX_DAC>>1;
 
-  memset(display_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(short));
+  memset(work_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(int));
+  
+  //Fetch longest voice sample
   display_buffer_size = 0;
-
-  for (display_buffer_size = 0; display_buffer_size < MAX_SAMPLE_SIZE; display_buffer_size++) {
-    int used_voices = 0;
-    int merge = 0;
-
-    for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
-      //Voice not playing or end reached
-      if ((voices[voice_idx].free_voice == true) || (voices[voice_idx].stop_ts > 0) ||  (display_buffer_size >= voices[voice_idx].sample_size)) {
-        continue;
-      }
-      used_voices++;
-      merge += voices[voice_idx].sample[display_buffer_size];
-    }
-    if (used_voices == 0) {
-      break;
-    }
-    got_sound = true;
-    display_buffer[display_buffer_size] = (unsigned short)(merge/(float)used_voices);
+  for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
+    if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].stop_ts <= 0) && (voices[voice_idx].sample_size > display_buffer_size))
+      display_buffer_size = voices[voice_idx].sample_size;
   }
 
-//Not currently in RUN mode, don't disturb display.
+  char dbg[64];
+
+  int voices_playing = 0;
+  for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
+    volatile voice_buffer_t * v = &voices[voice_idx];
+
+    if ((v->free_voice == true) || (v->stop_ts > 0)) {
+      continue; //Ignore that voice.
+    }
+
+    voices_playing++;
+    for (int idx = 0; idx < display_buffer_size; idx++) {
+      work_buffer[idx] += v->sample[idx%v->sample_size] - half_dac_range;
+    }
+  }
+
+  for (int idx = 0; idx < display_buffer_size; idx++) {
+    display_buffer[idx] = (unsigned short) (((float)work_buffer[idx] / (float)voices_playing) + half_dac_range);
+  }
+
+  //Not currently in RUN mode, don't disturb display.
   if (gmode_get() != GMODE_RUN) {
     return;
   }
 
-  if (got_sound) {
+  if (voices_playing != 0) {
     display_sample(display_buffer, display_buffer_size, 0);
   } else {
     display_nosample();
