@@ -38,7 +38,7 @@ unsigned int custom_wave_size;
 unsigned short display_buffer[MAX_SAMPLE_SIZE];
 unsigned int display_buffer_size;
 
-#define MAX_VOICES 1
+#define MAX_VOICES 8
 
 wave_t wave_form;
 bool gsynth_running = true;
@@ -85,6 +85,7 @@ void init_voice(int voice_idx) {
   voices[voice_idx].free_voice = true;
 }
 
+
 void gsynth_loop() {
   int current_ts = millis();
 
@@ -109,12 +110,11 @@ void gsynth_loop() {
     if  (voices[voice_idx].adsr_level_prc > 100) {
       voices[voice_idx].adsr_level_prc = 0;
     }
-/*
-    char dbg[64];
-    snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level_prc);
-    dbg[63] = 0x00;
-    debug_print(dbg);
-    */
+
+    //char dbg[64];
+    //snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level_prc);
+    //dbg[63] = 0x00;
+    //debug_print(dbg);
   }
 }
 
@@ -158,7 +158,7 @@ void dacoutput() {
   }
   int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
-  
+
   return;
 }
 
@@ -229,8 +229,6 @@ bool generate_sample(int voice_idx, int wave_frequency) {
   voices[voice_idx].stop_ts = 0;
   voices[voice_idx].free_voice = false;
 
-  refresh_display_buffer();
-  
   return true;
 }
 
@@ -241,7 +239,7 @@ void note_on(int channel, int pitch, int velocity) {
   int wave_frequency = pitchToFrequency(pitch);
   int voice_idx;
   int voice_free = -1;
-  
+
   //Look for duplicates and find a free slot
   for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if ((voices[voice_idx].free_voice == false) && (voices[voice_idx].wave_frequency == wave_frequency)) {
@@ -265,6 +263,7 @@ void note_on(int channel, int pitch, int velocity) {
 
   //Use a free voice slot
   generate_sample(voice_free, wave_frequency);
+  refresh_display_buffer();
 }
 
 void note_off(int channel, int pitch, int velocity) {
@@ -283,6 +282,7 @@ void note_off(int channel, int pitch, int velocity) {
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       dbg[63] = 0x00;
       debug_print(dbg);
+      refresh_display_buffer();
       return;
     }
   }
@@ -326,7 +326,7 @@ void refresh_display_buffer() {
 
     for (voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
       //Voice not playing or end reached
-      if ((voices[voice_idx].free_voice == true) || (display_buffer_size >= voices[voice_idx].sample_size)) {
+      if ((voices[voice_idx].free_voice == true) || (voices[voice_idx].stop_ts > 0) ||  (display_buffer_size >= voices[voice_idx].sample_size)) {
         continue;
       }
       used_voices++;

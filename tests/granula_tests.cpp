@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "granula_tests_stubs.h"
 #include "../tone_generator.h"
@@ -22,13 +23,15 @@ void test_gsynth();
 void test_poly();
 void test_adsr();
 void test_fuzz();
+void test_extrapolation();
 
 enum {
   TONE   = 0x000001,
   GSYNTH = 0x000002,
   POLY = 0X4,
   ADSR = 0x8,
-  FUZZ = 0x10
+  FUZZ = 0x10,
+  EXT = 0x20
 };
 
 int main(int argc, char*argv[]) {
@@ -44,6 +47,7 @@ int main(int argc, char*argv[]) {
     printf("  GSYNTH : test synth\n");
     printf("  POLY : test polyphony\n");
     printf("  ADSR : test envelope generation\n");
+    printf("  EXT : test extrapolation\n");
     printf("  FUZZ : Fuzz the whole synth (never ends)\n");
     return 0;
   }
@@ -57,6 +61,8 @@ int main(int argc, char*argv[]) {
       options |= POLY;
     if (!strcmp(argv[i], "ADSR"))
       options |= ADSR;
+    if (!strcmp(argv[i], "EXT"))
+      options |= EXT;      
     if (!strcmp(argv[i], "FUZZ"))
       options |= FUZZ;
   }
@@ -69,6 +75,8 @@ int main(int argc, char*argv[]) {
     test_poly();
   if ((options & ADSR) == ADSR)
     test_adsr();
+  if ((options & EXT) == EXT)
+    test_extrapolation();
   if ((options & FUZZ) == FUZZ)
     test_fuzz();
 
@@ -141,16 +149,14 @@ void test_gsynth() {
 
 
   gsynth_setup();
-  gsynth_set_adsr(0, 0, 1.0, 0);
+  gsynth_set_adsr(1, 1, 1.0, 1);
   gsynth_enable(true);
 
   TEST_SUB("Test: gsynth dacoutput...");
-  int pitch = 44;
-  gsynth_select_wave(WAVE_SAW);
-
+  gsynth_select_wave(WAVE_SIN);
   for (int pitch = 0; pitch < 100; pitch++) {
     note_on(1, pitch, 120);
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       dacoutput();
     }
     note_off(1, pitch, 0);
@@ -274,4 +280,35 @@ void test_fuzz() {
     }
   }
   TEST_END("FUZZing");
+}
+
+
+void test_extrapolation() {
+  TEST_START("EXTRAPOLATION");
+  int src_size = 64;
+  unsigned short src[src_size];
+
+  for (int i = 0; i < src_size; i++) {
+    double s = sin((i * 2 * 3.1416)/src_size);
+    src[i] =  s * 2048.0 + 2048.0;
+  }
+
+  FILE * f = fopen("extrapolation_src.csv", "wb");
+  for (int i = 0; i < src_size; i++) {
+    fprintf(f, "%d\n", src[i]);
+  }
+  fclose(f);
+
+  int freq = 5000;
+  unsigned short output[MAX_SAMPLE_SIZE];
+  unsigned int sample_count = tone_generate_custom(output, src, src_size, freq);
+
+  f = fopen("extrapolation.csv", "wb");
+  for (int i = 0; i < sample_count; i++) {
+    fprintf(f, "%d\n", output[i]);
+  }
+  fclose(f);
+  printf("One period defined as a %d array gives a buffer of size %d for %dHz played at %d sample rate\n", src_size, sample_count, freq, SAMPLE_RATE);
+
+  TEST_END("EXTRAPOLATION");
 }

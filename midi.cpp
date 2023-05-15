@@ -17,10 +17,11 @@ void midi_setup() {
 void midi_loop() {
 
   midiEventPacket_t rx;
-  rx = MidiUSB.read();
-  if (rx.header == 0) {
-    return;
-  }
+  while (1) {
+    rx = MidiUSB.read();
+    if (rx.header == 0) {
+      return;
+    }
     
 /*
   Serial.print("Received: ");
@@ -32,11 +33,12 @@ void midi_loop() {
   Serial.print("-");
   Serial.println(rx.byte3, HEX);
 */
-  if (((rx.header & 0x0F )== 0x09) && noteon_cb) { //Note on
-    noteon_cb(int(rx.byte1&0xF), int(rx.byte2), int(rx.byte3));
-  }
-  else if (((rx.header & 0x0F) == 0x08) && noteoff_cb) { //Note off
-    noteoff_cb(int(rx.byte1&0xF), int(rx.byte2), int(rx.byte3));
+    if (((rx.header & 0x0F )== 0x09) && noteon_cb) { //Note on
+      noteon_cb(int(rx.byte1&0xF), int(rx.byte2), int(rx.byte3));
+    }
+    else if (((rx.header & 0x0F) == 0x08) && noteoff_cb) { //Note off
+      noteoff_cb(int(rx.byte1&0xF), int(rx.byte2), int(rx.byte3));
+    }
   }
 }
 

@@ -52,8 +52,10 @@ void setup() {
   debug_setup(115200);
   debug_print("Granula");
 
+  //Setup synth
   pinMode(AUDIO_PIN, OUTPUT);
   mode = GMODE_RUN;
+  gsynth_setup();
 
   //Setup Display
   display_setup();
@@ -72,8 +74,6 @@ void setup() {
   //Menu
   menu_setup();
 
-  //Setup synth
-  gsynth_setup();
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
 }
 

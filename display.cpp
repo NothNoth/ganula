@@ -41,7 +41,7 @@ void splash() {
 void display_loop() {
 }
 
-//Display a sample buffer on the LCD (shows one or two periods depending on SHOW_TWO_PERIODS flag)
+//Display a sample buffer on the LCD
 void display_sample(unsigned short* sample, unsigned short len, unsigned int freq){
   int x = 0;
   int y;
@@ -84,7 +84,6 @@ void display_sample(unsigned short* sample, unsigned short len, unsigned int fre
 void display_nosample() {
   display.clearDisplay();
   display.drawFastHLine(0, 16, 128, WHITE);
-
   display.display();
 }
 

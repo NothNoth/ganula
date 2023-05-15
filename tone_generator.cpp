@@ -1,5 +1,6 @@
 #include "tone_generator.h"
 #include "setup.h"
+#include "interpolate.hpp"
 #ifdef _GRANULA_TESTS_
   #include "granula_tests_stubs.h"
 #else
@@ -121,6 +122,43 @@ unsigned int tone_generate_custom(volatile unsigned short*buffer, unsigned short
 
   return sample_count;
 }
+using namespace mlinterp;
+
+
+void extrapolate_new(unsigned short *src, int src_size, volatile unsigned short *dest, int dest_size) {
+int input_size = src_size, input_size_array[] = { src_size };
+int output_size = dest_size;
+int input_x[input_size];
+int input_y[input_size];
+int output_x[output_size];
+int output_y[output_size];
+
+for (int i = 0; i < input_size; i++) {
+  input_x[i] = i;
+  input_y[i] = (int)(src[i]);
+}
+for (int i = 0; i < output_size; i++) {
+  output_x[i] = i;
+}
+memset(output_y, 42, output_size);
+interp(
+	input_size_array, output_size, // Number of points
+	input_y, output_y, // Output axis (y)
+	input_x, output_x  // Input axis (x)
+);
+
+for (int i = 0; i < output_size; i++) {
+  dest[i] = (unsigned short) (output_y[i]);
+}
+ 
+ /* int srcx[src_size];
+  int destx[dest_size];
+  
+  interp(src_size, dest_size,
+        src, dest,
+        srcx, destx);
+*/
+}
 
 void extrapolate(unsigned short *src, int src_size, volatile unsigned short *dest, int dest_size) {
   int i;
@@ -133,7 +171,7 @@ void extrapolate(unsigned short *src, int src_size, volatile unsigned short *des
     for (int i = 0; i < src_size; i++) {
       int idx = i*scale;
       for (int j = 0; j < scale; j++) {
-        dest[idx+j] = src[i];
+        dest[idx+j] = src[i];//fails FIXME
       }
     }
   } else {
