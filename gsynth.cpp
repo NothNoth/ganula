@@ -37,9 +37,6 @@ unsigned int custom_wave_size;
 
 
 
-#define MAX_VOICES 8
-#define ADSR_RANGE    1024
-#define ADSR_BITSHIFT 10 // <-- divided by ADSR_RANGE gives
 
 wave_t wave_form;
 bool gsynth_running = true;
@@ -63,7 +60,7 @@ void gsynth_setup() {
 
   init_voices();
   gsynth_select_wave(WAVE_SIN);
-  gsynth_set_adsr(50, 18, 80, 0);
+  gsynth_set_adsr(50, 18, 800, 0);
   display_needs_refresh = true;
 }
 
@@ -375,12 +372,21 @@ void refresh_display_buffer() {
 void gsynth_set_adsr(int a, int d, int s, int r) {
   if (a < 0)
     a = 0;
+  if (a > ADSR_MAX_ATTACK_MS)
+    a = ADSR_MAX_ATTACK_MS;
+
   if (d < 0)
     d = 0;
-  if ((s < 0) || (s >100))
-    s = 100;
+  if (d > ADSR_MAX_DECAY_MS)
+    d = ADSR_MAX_DECAY_MS;
+  
+  if ((s < 0) || (s >ADSR_RANGE))
+    s = ADSR_RANGE;
+
   if (r < 0)
     r = 0;
+  if (r > ADSR_MAX_RELEASE_MS)
+    r = ADSR_MAX_RELEASE_MS;
 
   adsr.a_ms = a;
   adsr.d_ms = d;

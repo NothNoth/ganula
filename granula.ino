@@ -175,16 +175,16 @@ void pot_changed(int value) {
       gsynth_get_adsr(&adsr);
       switch (adsr_select_idx) {
         case 0: //Attack
-          adsr.a_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+          adsr.a_ms = (int)((float)value *ADSR_MAX_ATTACK_MS/(float)POT_RANGE);
         break;
         case 1: //Decay
-          adsr.d_ms = (int)((float)value *1000.0/(float)POT_RANGE);
+          adsr.d_ms = (int)((float)value *ADSR_MAX_DECAY_MS/(float)POT_RANGE);
         break;
         case 2: //Sustain
-          adsr.s = (int)((float)value *100.0/(float)POT_RANGE);
+          adsr.s = (int)((float)value *ADSR_RANGE/(float)POT_RANGE);
         break;
         case 3: //Release
-          adsr.r_ms = (int)((float)value *2000.0/(float)POT_RANGE);
+          adsr.r_ms = (int)((float)value *ADSR_MAX_RELEASE_MS/(float)POT_RANGE);
         break;
       }
       gsynth_set_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);

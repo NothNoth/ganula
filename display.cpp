@@ -207,22 +207,22 @@ void display_adsr(int a, int d, int s, int r, bool select_a, bool select_d, bool
   display.setCursor(1, 3);
   display.setTextColor(select_a?BLACK:WHITE, select_a?WHITE:BLACK);
   display.print("A");
-  display.drawFastHLine(margin, 6, (int)(a * (128.0 - margin)/1000.0), WHITE);
+  display.drawFastHLine(margin, 6, (int)(a * (128.0 - margin)/ADSR_MAX_ATTACK_MS), WHITE);
 
   display.setCursor(1, 10);
   display.setTextColor(select_d?BLACK:WHITE, select_d?WHITE:BLACK);
   display.print("D");
-  display.drawFastHLine(margin, 13, (int)(d * (128.0 - margin)/1000.0), WHITE);
+  display.drawFastHLine(margin, 13, (int)(d * (128.0 - margin)/ADSR_MAX_DECAY_MS), WHITE);
 
   display.setCursor(1, 18);
   display.setTextColor(select_s?BLACK:WHITE, select_s?WHITE:BLACK);
   display.print("S");
-  display.drawFastHLine(margin, 21, (int)(s * (128.0 - margin)/100.0), WHITE);
+  display.drawFastHLine(margin, 21, (int)(s * (128.0 - margin)/ADSR_RANGE), WHITE);
  
   display.setCursor(1, 26);
   display.setTextColor(select_r?BLACK:WHITE, select_r?WHITE:BLACK);
   display.print("R");
-  display.drawFastHLine(margin, 29, (int)(r * (128.0 - margin)/2000.0), WHITE);
+  display.drawFastHLine(margin, 29, (int)(r * (128.0 - margin)/ADSR_MAX_RELEASE_MS), WHITE);
 
   display.display();
 }

@@ -20,6 +20,15 @@
 //Potentiometer read value range
 #define POT_RANGE 512
 
+#define MAX_VOICES 8
+
+#define ADSR_RANGE    1024
+#define ADSR_BITSHIFT 10 // <-- divided by ADSR_RANGE gives
+#define ADSR_MAX_ATTACK_MS 1000
+#define ADSR_MAX_DECAY_MS 1000
+#define ADSR_MAX_RELEASE_MS 2000
+
+
 //Controls pins
 #define CONTROLS_BT1 A9
 #define CONTROLS_BT2 A10
