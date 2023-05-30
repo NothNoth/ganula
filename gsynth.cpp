@@ -35,8 +35,7 @@ typedef struct {
 unsigned short custom_wave[MAX_SAMPLE_SIZE];
 unsigned int custom_wave_size;
 
-unsigned short display_buffer[MAX_SAMPLE_SIZE];
-unsigned int display_buffer_size;
+
 
 #define MAX_VOICES 8
 
@@ -44,6 +43,7 @@ wave_t wave_form;
 bool gsynth_running = true;
 volatile voice_buffer_t voices[MAX_VOICES];
 adsr_t adsr;
+bool display_needs_refresh;
 
 int pitchToFrequency(int pitch);
 bool generate_sample(int voice_idx, int wave_frequency);
@@ -62,6 +62,7 @@ void gsynth_setup() {
   init_voices();
   gsynth_select_wave(WAVE_SIN);
   gsynth_set_adsr(50, 18, 80, 0);
+  display_needs_refresh = true;
 }
 
 void gsynth_enable(bool run) {
@@ -89,6 +90,7 @@ void init_voice(int voice_idx) {
 void gsynth_loop() {
   int current_ts = millis();
 
+  //Update ADSR coefficients
   for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     if (voices[voice_idx].free_voice == true) {
       continue;
@@ -115,6 +117,10 @@ void gsynth_loop() {
     //snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level_prc);
     //dbg[63] = 0x00;
     //debug_print(dbg);
+  }
+
+  if (display_needs_refresh) {
+      refresh_display_buffer();
   }
 }
 
@@ -263,7 +269,7 @@ void note_on(int channel, int pitch, int velocity) {
 
   //Use a free voice slot
   generate_sample(voice_free, wave_frequency);
-  refresh_display_buffer();
+  display_needs_refresh = true;
 }
 
 void note_off(int channel, int pitch, int velocity) {
@@ -282,7 +288,7 @@ void note_off(int channel, int pitch, int velocity) {
       snprintf(dbg, 64, "Voice %d stopping freq %dHz", voice_idx, wave_frequency);
       dbg[63] = 0x00;
       debug_print(dbg);
-      refresh_display_buffer();
+      display_needs_refresh = true;
       return;
     }
   }
@@ -312,13 +318,14 @@ void gsynth_select_wave(wave_t w) {
   wave_form = w;
 }
 
-//FIXME: 
-// 1 : find the longest voice size and use it as display size
-// 2 : fill with every voice and loop if voice has reached its end
 void refresh_display_buffer() {
+  unsigned short display_buffer[MAX_SAMPLE_SIZE];
+  unsigned int display_buffer_size;
+
   int work_buffer[MAX_SAMPLE_SIZE];
   unsigned int half_dac_range = MAX_DAC>>1;
 
+  display_needs_refresh = false;
   memset(work_buffer, 0x00, MAX_SAMPLE_SIZE * sizeof(int));
   
   //Fetch longest voice sample
@@ -340,7 +347,9 @@ void refresh_display_buffer() {
 
     voices_playing++;
     for (int idx = 0; idx < display_buffer_size; idx++) {
-      work_buffer[idx] += v->sample[idx%v->sample_size] - half_dac_range;
+      int val = v->sample[idx%v->sample_size];
+      val -= half_dac_range;
+      work_buffer[idx] += val;
     }
   }
 
@@ -352,7 +361,7 @@ void refresh_display_buffer() {
   if (gmode_get() != GMODE_RUN) {
     return;
   }
-
+  
   if (voices_playing != 0) {
     display_sample(display_buffer, display_buffer_size, 0);
   } else {
