@@ -25,7 +25,7 @@ typedef struct {
   unsigned int wave_frequency;
   int start_ts;
   volatile int stop_ts;
-  volatile unsigned int adsr_level_prc;
+  volatile unsigned int adsr_level;
 
   unsigned int  sample_size;
   unsigned int sample_idx;
@@ -38,6 +38,8 @@ unsigned int custom_wave_size;
 
 
 #define MAX_VOICES 8
+#define ADSR_RANGE    1024
+#define ADSR_BITSHIFT 10 // <-- divided by ADSR_RANGE gives
 
 wave_t wave_form;
 bool gsynth_running = true;
@@ -98,23 +100,23 @@ void gsynth_loop() {
 
     if (voices[voice_idx].stop_ts == 0) {
       //Voice is still playing
-      voices[voice_idx].adsr_level_prc = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
+      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
     } else {
       //Voice is being released
-      voices[voice_idx].adsr_level_prc = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
+      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
 
-      if (voices[voice_idx].adsr_level_prc == 0) {
+      if (voices[voice_idx].adsr_level == 0) {
         //Reached 0, time to free this voice
         init_voice(voice_idx);
         continue;
       }   
     }
-    if  (voices[voice_idx].adsr_level_prc > 100) {
-      voices[voice_idx].adsr_level_prc = 0;
+    if  (voices[voice_idx].adsr_level > ADSR_RANGE) {
+      voices[voice_idx].adsr_level = 0;
     }
 
     //char dbg[64];
-    //snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level_prc);
+    //snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level);
     //dbg[63] = 0x00;
     //debug_print(dbg);
   }
@@ -146,7 +148,7 @@ void dacoutput() {
     voices_playing ++;
     int value = voiceptr->sample[voiceptr->sample_idx];
     value -= half_dac_range;
-    value = (int)((value * (float)voiceptr->adsr_level_prc) / 100.0);
+    value = (value * voiceptr->adsr_level) >> ADSR_BITSHIFT;
     merge += value;
    
     voiceptr->sample_idx++;
@@ -321,7 +323,6 @@ void gsynth_select_wave(wave_t w) {
 void refresh_display_buffer() {
   unsigned short display_buffer[MAX_SAMPLE_SIZE];
   unsigned int display_buffer_size;
-
   int work_buffer[MAX_SAMPLE_SIZE];
   unsigned int half_dac_range = MAX_DAC>>1;
 
@@ -337,6 +338,7 @@ void refresh_display_buffer() {
 
   char dbg[64];
 
+  //Sum all voices
   int voices_playing = 0;
   for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
     volatile voice_buffer_t * v = &voices[voice_idx];
@@ -353,6 +355,7 @@ void refresh_display_buffer() {
     }
   }
 
+  //Average and center
   for (int idx = 0; idx < display_buffer_size; idx++) {
     display_buffer[idx] = (unsigned short) (((float)work_buffer[idx] / (float)voices_playing) + half_dac_range);
   }
@@ -390,14 +393,27 @@ void gsynth_set_adsr(int a, int d, int s, int r) {
   debug_print(dbg);
 }
 
+/*
+  In an ideal world, ADSR level would be a value from 0.0 to 1.0, which
+  multiplicated by the signal level would provide the required attenuation.
+  Our Arduino doesn't have float support and since those computations are made
+  inside the interrupt, we can't afford to waste time with software implementations.
+
+  Thus:
+  
+    - The signal value ranges from 0 to MAX_DAC
+    - The ADSR value ranges from 0 to 1024
+    - When applied, out signal value is multiplicated by the ADSR value
+    - Then divided by 1024 (<< 10)
+*/
 unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) {
   unsigned int level;
 
   if (duration <= config->a_ms) { // In attack section
     if (config->a_ms == 0) { // No attack, direct jump to max level
-      return 100;
+      return ADSR_RANGE;
     } 
-    level = (int)(duration*100/(float)config->a_ms);
+    level = (int)(duration*ADSR_RANGE/(float)config->a_ms);
     return level<0?0:level;
   }
 
@@ -405,7 +421,7 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
     if (config->d_ms == 0) { // No decay, direct jump to sustain level
       return config->s;
     } 
-    int a = (100 - config->s) / ((float) (config->a_ms - config->d_ms));
+    int a = (ADSR_RANGE - config->s) / ((float) (config->a_ms - config->d_ms));
     int b = config->s - a * config->d_ms;
     level = a * duration + b; 
     return level<0?0:level;

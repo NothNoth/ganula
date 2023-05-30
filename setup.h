@@ -6,7 +6,7 @@
 
 //Granula will read the output buffer at this sample rate
 //and write to the DAC output accordingly.
-#define SAMPLE_RATE 8000
+#define SAMPLE_RATE 22000
 
 //Audio output pin
 #define AUDIO_PIN DAC1
