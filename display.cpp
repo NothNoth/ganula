@@ -45,26 +45,26 @@ void display_loop() {
 void display_sample(unsigned short* sample, unsigned short len, unsigned int freq){
   int x = 0;
   int y;
-  float xScale = (len/64.0);
-
+  int xScale = len>>6; //Divide by 64
+return; //FIXME
   display.clearDisplay();
 
   for (x = 0; x < 64; x++) {
     //From 4096 range to 32 for Y axis => divide by 128 => 7 bits shift
-    y = sample[int(x*xScale)]>>7;
+    y = sample[x*xScale]>>7;
     if (y >= 32) {
       y = 31;
     }
     display.drawPixel(x, y, WHITE);
     display.drawPixel(x+64, y, WHITE);
     if (x+1 < 64) {
-      antialias(x, y, sample[int((x+1)*xScale)]>>7);
-      antialias(x+64, y, sample[int((x+1)*xScale)]>>7);
+      antialias(x, y, sample[(x+1)*xScale]>>7);
+      antialias(x+64, y, sample[(x+1)*xScale]>>7);
     }
   }
 
-  int y1 = sample[0 ]>>7;
-  int y2 = sample[int(63 * xScale)]>>7;
+  int y1 = sample[0]>>7;
+  int y2 = sample[63 * xScale]>>7;
   for (y = (y1<y2?y1:y2); y < (y1<y2?y2:y1); y++) {
     display.drawPixel(64, y, WHITE);
   }
