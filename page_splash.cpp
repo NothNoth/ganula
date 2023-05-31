@@ -1,7 +1,11 @@
 #include "page_splash.hpp"
 #include "display.h"
-#include "ntm.h"
 
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 PageSplash::PageSplash() {
 
 }

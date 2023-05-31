@@ -207,9 +207,9 @@ void test_adsr() {
   adsr_t adsr;
 
   TEST_START("ADSR");
-  adsr.a_ms = 100;
-  adsr.d_ms = 50;
-  adsr.s = 70;
+  adsr.a_ms = 50;
+  adsr.d_ms = 80;
+  adsr.s = ADSR_RANGE/2;
   adsr.r_ms = 200;
 
 //Dump adsr curve
@@ -224,7 +224,7 @@ void test_adsr() {
   TEST_ASSERT(level == 0, "Attack starts at level 0");
 
   level = adsr_get_level(adsr.a_ms, 0, &adsr);
-  TEST_ASSERT(level == 100, "Attack ends at level 100");
+  TEST_ASSERT(level == ADSR_RANGE, "Attack ends at level ADSR_RANGE");
 
   level = adsr_get_level(adsr.a_ms + adsr.d_ms, 0, &adsr);
   TEST_ASSERT(level == adsr.s, "Sustain ends at level 'sustain'");

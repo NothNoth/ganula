@@ -420,8 +420,8 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
     if (config->d_ms == 0) { // No decay, direct jump to sustain level
       return config->s;
     } 
-    float a = ((float)(ADSR_RANGE) - config->s) / ((float) (config->a_ms - config->d_ms));
-    float b = config->s - a * config->d_ms;
+    float a = - ((float)(ADSR_RANGE) - config->s) / ((float) (config->d_ms));
+    float b = (float)(ADSR_RANGE) - a * (float)config->a_ms;
     level = int(a * duration + b); 
     return level<0?0:level;
   }

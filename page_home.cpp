@@ -1,8 +1,12 @@
 #include "page_home.hpp"
 #include "display.h"
 #include "granula.h"
-#include "ntm.h"
 
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 PageHome::PageHome() {
 
 }

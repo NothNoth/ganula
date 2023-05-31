@@ -3,9 +3,13 @@
 #include "display.h"
 #include "gsynth.h"
 #include "granula.h"
-#include "ntm.h"
 #include <string.h>
 
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 
 
 PageMenu::PageMenu() {

@@ -3,8 +3,11 @@
 #include "setup.h"
 #include "granula.h"
 #include "gsynth.h"
-#include "ntm.h"
-
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+#endif
 
 PageADSR::PageADSR() {
 

@@ -1,10 +1,19 @@
 #include "page_rec.hpp"
 #include "display.h"
 #include "granula.h"
-#include "Arduino.h"
 #include "setup.h"
 #include "gsynth.h"
-#include "ntm.h"
+#include <string.h>
+#include <math.h>
+
+#ifdef _GRANULA_TESTS_
+  #include "granula_tests_stubs.h"
+#else
+  #include "ntm.h"
+  #include "Arduino.h"
+#endif
+
+
 PageRec::PageRec() {
 
 }
