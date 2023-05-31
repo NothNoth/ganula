@@ -104,7 +104,7 @@ void gmode_switch(gmode_t new_mode) {
       current_page = new PageRec();
       break;
     case PAGE_MENU:
-      current_page = new PageHome();
+      current_page = new PageMenu();
       break;
     case PAGE_ADSR:
       current_page = new PageADSR();
