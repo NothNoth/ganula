@@ -88,28 +88,28 @@ void init_voice(int voice_idx) {
 
 void gsynth_loop() {
   int current_ts = millis();
+  volatile voice_buffer_t *v;
 
   //Update ADSR coefficients
   for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
-    if (voices[voice_idx].free_voice == true) {
+    v = &voices[voice_idx];
+    if (v->free_voice == true) {
       continue;
     }
-
     if (voices[voice_idx].stop_ts == 0) {
       //Voice is still playing
-      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, -1, &adsr);
+      v->adsr_level = adsr_get_level(current_ts - v->start_ts, -1, &adsr);
     } else {
       //Voice is being released
-      voices[voice_idx].adsr_level = adsr_get_level(current_ts - voices[voice_idx].start_ts, current_ts - voices[voice_idx].stop_ts, &adsr);
-
-      if (voices[voice_idx].adsr_level == 0) {
+      v->adsr_level = adsr_get_level(current_ts - v->start_ts, current_ts - v->stop_ts, &adsr);
+      if (v->adsr_level == 0) {
         //Reached 0, time to free this voice
         init_voice(voice_idx);
         continue;
       }   
     }
-    if  (voices[voice_idx].adsr_level > ADSR_RANGE) {
-      voices[voice_idx].adsr_level = 0;
+    if  (v->adsr_level > ADSR_RANGE) {
+      v->adsr_level = 0;
     }
   }
 
@@ -412,17 +412,17 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
     if (config->a_ms == 0) { // No attack, direct jump to max level
       return ADSR_RANGE;
     } 
-    level = (int)(duration*ADSR_RANGE/(float)config->a_ms);
+    level = int(((float)duration*ADSR_RANGE)/(float)config->a_ms);
     return level<0?0:level;
   }
 
-  if (duration <= config->a_ms + config->d_ms) { //In decay
+  if (duration <= (config->a_ms + config->d_ms)) { //In decay
     if (config->d_ms == 0) { // No decay, direct jump to sustain level
       return config->s;
     } 
-    int a = (ADSR_RANGE - config->s) / ((float) (config->a_ms - config->d_ms));
-    int b = config->s - a * config->d_ms;
-    level = a * duration + b; 
+    float a = ((float)(ADSR_RANGE) - config->s) / ((float) (config->a_ms - config->d_ms));
+    float b = config->s - a * config->d_ms;
+    level = int(a * duration + b); 
     return level<0?0:level;
   }
 
