@@ -13,7 +13,6 @@
   #include "ntm.h"
 #endif
 
-
 typedef enum {
   BUFFER_A = 0,
   BUFFER_B = 1
@@ -85,7 +84,6 @@ void init_voice(int voice_idx) {
   voices[voice_idx].free_voice = true;
 }
 
-
 void gsynth_loop() {
   int current_ts = millis();
   volatile voice_buffer_t *v;
@@ -140,7 +138,8 @@ void dacoutput() {
     voices_playing ++;
     int value = voiceptr->sample[voiceptr->sample_idx];
     value -= half_dac_range;
-    value = (value * voiceptr->adsr_level) >> ADSR_BITSHIFT;
+    value *= voiceptr->adsr_level;
+    value = value >> ADSR_BITSHIFT;
     merge += value;
    
     voiceptr->sample_idx++;
@@ -156,7 +155,7 @@ void dacoutput() {
     analogWrite(AUDIO_PIN, half_dac_range);
     return;
   }
-  int out = (int)(((merge)/(float)voices_playing) + half_dac_range);
+  int out = (int)((((float)(merge))/(float)voices_playing) + half_dac_range);
   analogWrite(AUDIO_PIN, out);
 
   return;
@@ -385,11 +384,12 @@ void gsynth_set_adsr(int a, int d, int s, int r) {
   adsr.d_ms = d;
   adsr.s = s;
   adsr.r_ms = r;
-
+/*
   char dbg[64];
   snprintf(dbg, 64, "Set adsr to: %dms/%dms/%d/%dms", adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);
   dbg[63] = 0x00;
   debug_print(dbg);
+  */
 }
 
 /*
@@ -406,7 +406,7 @@ void gsynth_set_adsr(int a, int d, int s, int r) {
     - Then divided by 1024 (<< 10)
 */
 unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) {
-  unsigned int level;
+  int level;
 
   if (duration <= config->a_ms) { // In attack section
     if (config->a_ms == 0) { // No attack, direct jump to max level
@@ -433,7 +433,12 @@ unsigned int adsr_get_level(int duration, int release_duration, adsr_t *config) 
   //In release
   if (config->r_ms == 0) { // No release, direct jump to 0
     return 0;
-  } 
+  }
+  //Full release reached, return 0
+  if (release_duration > config->r_ms) {
+    debug_print("Full release.");
+    return 0;
+  }
   float a = -(((float)config->s / ((float)config->r_ms))) ;
   int b = config->s;
   level = a * release_duration + b;
