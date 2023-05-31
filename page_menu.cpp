@@ -1,55 +1,14 @@
-#include "menu.h"
+#include "page_menu.hpp"
+
 #include "display.h"
 #include "gsynth.h"
 #include "granula.h"
+#include "ntm.h"
 #include <string.h>
 
-#ifdef _GRANULA_TESTS_
-  #include "granula_tests_stubs.h"
-#else
-  #include "ntm.h"
-#endif
-
-bool menu_shown;
-
-#define MAX_MENU_ITEMS 6
-typedef enum {
-  menu_tag_waveform = 0,
-  menu_tag_waveform_new = 1,
-  menu_tag_enveloppe = 2,
-  menu_tag_reset = 9,
-
-  menu_tag_waveform_sin = 3,
-  menu_tag_waveform_square = 4,
-  menu_tag_waveform_triangle = 5,
-  menu_tag_waveform_saw = 6,
-  menu_tag_waveform_custom1 = 7,
-  menu_tag_waveform_isaw = 8,
-} menu_tag_t;
-
-typedef struct 
-{
-  char name[16];
-  menu_tag_t tag;
-} menu_item_t;
-
-typedef struct {
-  menu_item_t items[MAX_MENU_ITEMS];
-  int menu_items_count;
-  int menu_idx;
-} menu_t;
-
-menu_t root;
-menu_t waveforms;
-
-menu_t *current;
 
 
-void menu_refresh();
-
-void menu_setup() {
-  menu_shown = false;
-
+PageMenu::PageMenu() {
 //Root menu
   root.menu_idx = 0;
   root.menu_items_count = 4;
@@ -83,24 +42,88 @@ void menu_setup() {
   current = &root;
 }
 
-void menu_loop() {
 
-}
-
-void menu_flip() {
-  menu_shown = !menu_shown;
+void PageMenu::enter(){
   current = &root;
-
-  menu_refresh();
+  debug_print("Entering Menu");
+  refresh();
 }
 
-void menu_refresh() {
-  int line1_idx, line2_idx, line3_idx;
-  int selected_idx;
+void PageMenu::leave(){
+  display_clear();
+}
 
-  if (menu_shown == false) {
+void PageMenu::loop() {
+  
+}
+
+void PageMenu::button1_pressed(){
+  
+}
+
+
+void PageMenu::button2_pressed(){
+  debug_print(current->items[current->menu_idx].name);
+  switch (current->items[current->menu_idx].tag) {
+    case menu_tag_waveform:
+      current = &waveforms;
+      waveforms.menu_idx = 0;
+      refresh();
+    break;
+    case menu_tag_waveform_new:
+      gmode_switch(PAGE_REC);
+      return;
+    break;
+    case menu_tag_enveloppe:
+      gmode_switch(PAGE_ADSR);
+      return;
+    break;
+    case menu_tag_reset:
+      reset();
+      return;
+    break;
+    case menu_tag_waveform_sin:
+      gsynth_select_wave(WAVE_SIN);
+      gmode_switch(PAGE_HOME);
+    break;
+    case menu_tag_waveform_triangle:
+      gsynth_select_wave(WAVE_TRIANGLE);
+      gmode_switch(PAGE_HOME);
+    break;
+    case menu_tag_waveform_square:
+      gsynth_select_wave(WAVE_SQUARE);
+      gmode_switch(PAGE_HOME);
+    break;
+    case menu_tag_waveform_saw:
+      gsynth_select_wave(WAVE_SAW);
+      gmode_switch(PAGE_HOME);
+    break;
+    case menu_tag_waveform_isaw:
+      gsynth_select_wave(WAVE_ISAW);
+      gmode_switch(PAGE_HOME);
+    break;
+    case menu_tag_waveform_custom1:
+      gsynth_select_wave(WAVE_CUSTOM);
+      gmode_switch(PAGE_HOME);
+    break;
+  }
+}
+
+void PageMenu::pot_changed(int value) {
+  // (512 -> MAX_ITEMS)
+  int new_idx = value * (float)(current->menu_items_count) / 512.0;
+  if (new_idx == current->menu_idx) {
     return;
   }
+  current->menu_idx = new_idx;
+  refresh();
+}
+
+
+
+void PageMenu::refresh() {
+  int line1_idx, line2_idx, line3_idx;
+  int selected_idx;
 
   //Ideal default behaviour
   line1_idx = current->menu_idx;
@@ -138,67 +161,4 @@ void menu_refresh() {
   if (line3_idx < current->menu_items_count) {
     display_text(current->items[line3_idx].name, 2,  line3_idx == selected_idx?true:false);
   }
-}
-
-void menu_select() {
-  debug_print(current->items[current->menu_idx].name);
-  switch (current->items[current->menu_idx].tag) {
-    case menu_tag_waveform:
-      current = &waveforms;
-      waveforms.menu_idx = 0;
-      menu_refresh();
-    break;
-    case menu_tag_waveform_new:
-      gmode_switch(GMODE_CUSTOM_POTSYNC);
-      menu_flip();
-      return;
-    break;
-    case menu_tag_enveloppe:
-      gmode_switch(GMODE_ADSR);
-      menu_flip();
-      return;
-    break;
-    case menu_tag_reset:
-      reset();
-      return;
-    break;
-    case menu_tag_waveform_sin:
-      gsynth_select_wave(WAVE_SIN);
-      menu_flip();
-    break;
-    case menu_tag_waveform_triangle:
-      gsynth_select_wave(WAVE_TRIANGLE);
-      menu_flip();
-    break;
-    case menu_tag_waveform_square:
-      gsynth_select_wave(WAVE_SQUARE);
-      menu_flip();
-    break;
-    case menu_tag_waveform_saw:
-      gsynth_select_wave(WAVE_SAW);
-      menu_flip();
-    break;
-    case menu_tag_waveform_isaw:
-      gsynth_select_wave(WAVE_ISAW);
-      menu_flip();
-    break;
-    case menu_tag_waveform_custom1:
-      gsynth_select_wave(WAVE_CUSTOM);
-      menu_flip();
-    break;
-  }
-}
-
-
-void menu_pot(int value) {
-  if (menu_shown == false) {
-    return;
-  }
-  // (512 -> MAX_ITEMS)
-  int new_idx = value * (float)(current->menu_items_count) / 512.0;
-  if (new_idx == current->menu_idx) {
-    return;
-  }
-  current->menu_idx = new_idx;
-  menu_refresh();
 }

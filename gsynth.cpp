@@ -111,11 +111,6 @@ void gsynth_loop() {
     if  (voices[voice_idx].adsr_level > ADSR_RANGE) {
       voices[voice_idx].adsr_level = 0;
     }
-
-    //char dbg[64];
-    //snprintf(dbg, 64, "adsr voice %d: %d %%\n", voice_idx, voices[voice_idx].adsr_level);
-    //dbg[63] = 0x00;
-    //debug_print(dbg);
   }
 
   if (display_needs_refresh) {
@@ -333,8 +328,6 @@ void refresh_display_buffer() {
       display_buffer_size = voices[voice_idx].sample_size;
   }
 
-  char dbg[64];
-
   //Sum all voices
   int voices_playing = 0;
   for (int voice_idx = 0; voice_idx < MAX_VOICES; voice_idx++) {
@@ -358,7 +351,7 @@ void refresh_display_buffer() {
   }
 
   //Not currently in RUN mode, don't disturb display.
-  if (gmode_get() != GMODE_RUN) {
+  if (gmode_get() != PAGE_HOME) {
     return;
   }
   

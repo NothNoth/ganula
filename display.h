@@ -4,6 +4,8 @@
 void display_setup();
 void display_loop();
 
+void display_splash();
+
 void display_sample(unsigned short* sample, unsigned short len, unsigned int freq);
 void display_nosample();
 

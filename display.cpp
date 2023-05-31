@@ -20,10 +20,9 @@ void splash();
 void display_setup() {
   display = Adafruit_SSD1306(128, 32, &Wire);
   display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS);
-  splash();
 }
 
-void splash() {
+void display_splash() {
   display.clearDisplay();
 
   display.setCursor(1,8);

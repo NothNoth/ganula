@@ -4,6 +4,12 @@
 #include <math.h>
 #include <string.h>
 
+#include "pages.hpp"
+#include "page_splash.hpp"
+#include "page_home.hpp"
+#include "page_rec.hpp"
+#include "page_menu.hpp"
+#include "page_adsr.hpp"
 
 #ifdef _GRANULA_TESTS_
   #include "granula_tests_stubs.h"
@@ -13,16 +19,9 @@
 #endif
 #include "midi.h"
 #include "gsynth.h"
-#include "menu.h"
 #include "granula.h"
 
 gmode_t mode;
-int last_pot_value;
-
-#define CUSTOM_REC_SAMPLE_SIZE 128
-#define CUSTOM_REC_SAMPLE_POINT_MS 120
-#define CUSTOM_REC_SAMPLE_POT_MARGIN 128
-
 
 //Reset helpers
 #define SYSRESETREQ    (1<<2)
@@ -32,29 +31,19 @@ int last_pot_value;
 #define REQUEST_EXTERNAL_RESET (AIRCR=(AIRCR&VECTKEY_MASK)|VECTKEY|SYSRESETREQ)
 
 
-
-
-int custom_rec_idx;
-int custom_rec_ts;
-unsigned short customrecsample[CUSTOM_REC_SAMPLE_SIZE];
-
-int adsr_select_idx;
-
 void pot_changed(int value);
 void bt1_pressed(int unused);
 void bt2_pressed(int unused);
 
+Page *current_page = NULL;
 
 void setup() {
-  last_pot_value = 0;
-
   //Setup debug print on serial port
   debug_setup(115200);
   debug_print("Granula");
 
   //Setup synth
   pinMode(AUDIO_PIN, OUTPUT);
-  mode = GMODE_RUN;
   gsynth_setup();
 
   //Setup Display
@@ -71,10 +60,13 @@ void setup() {
   controls_register_bt1_cb(bt1_pressed);
   controls_register_bt2_cb(bt2_pressed);
 
-  //Menu
-  menu_setup();
 
   Timer3.attachInterrupt(dacoutput).setFrequency(SAMPLE_RATE).start();
+
+  current_page = NULL;
+  gsynth_enable(true);
+  gmode_switch(PAGE_SPLASH);
+  gmode_switch(PAGE_HOME);
 }
 
 
@@ -82,25 +74,10 @@ void loop() {
   controls_loop();
   display_loop();
   midi_loop();
-  menu_loop();
   gsynth_loop();
 
-  if (mode == GMODE_CUSTOM_REC) {
-    if (millis() - custom_rec_ts > CUSTOM_REC_SAMPLE_POINT_MS) {
-      custom_rec_idx++;
-
-      int fact = MAX_DAC / POT_RANGE;
-      int pot_value = (POT_RANGE - last_pot_value)*fact;
-      display_rec(custom_rec_idx, pot_value, customrecsample);
-      customrecsample[custom_rec_idx] = pot_value;
-      custom_rec_ts = millis();
-
-      //Done
-      if (custom_rec_idx == CUSTOM_REC_SAMPLE_SIZE) {
-        gsynth_save_custom(customrecsample+10, CUSTOM_REC_SAMPLE_SIZE-20);
-        gmode_switch(GMODE_RUN);
-      }
-    }
+  if (current_page != NULL) {
+    current_page->loop();
   }
 }
 
@@ -110,115 +87,53 @@ gmode_t gmode_get() {
 
 void gmode_switch(gmode_t new_mode) {
 
-  //Stop previous mode
-  switch (mode) {
-    case GMODE_RUN:
-      gsynth_enable(false);
-    break;
-    case GMODE_CUSTOM_POTSYNC:
-    break;
-    case GMODE_CUSTOM_REC:
-    break;
-    case GMODE_ADSR:
-    break;
-    case GMODE_MAX:
-    break;
+  if (current_page != NULL) {
+    current_page->leave();
+    delete(current_page);
   }
-
-  //Setup new mode
-  switch (new_mode) {
-    case GMODE_RUN:
-      gsynth_enable(true);
-    break;
-    case GMODE_CUSTOM_POTSYNC:
-      display_potsync(last_pot_value);
-    break;
-    case GMODE_CUSTOM_REC:
-      custom_rec_idx = 0;
-      custom_rec_ts = millis();
-      memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE*sizeof(unsigned short));
-      display_rec(custom_rec_idx, last_pot_value, customrecsample);
-    break;
-    case GMODE_ADSR:
-      adsr_t adsr;
-      gsynth_enable(true);
-      adsr_select_idx = 0;
-      gsynth_get_adsr(&adsr);
-      display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, true, false, false, false);
-    break;
-    case GMODE_MAX:
-      return;
-    break;
-  }
-
   mode = new_mode;
+
+  switch (mode) {
+    case PAGE_SPLASH:
+      current_page = new PageSplash();
+      break;
+    case PAGE_HOME:
+      current_page = new PageHome();
+      break;
+    case PAGE_REC:
+      current_page = new PageRec();
+      break;
+    case PAGE_MENU:
+      current_page = new PageHome();
+      break;
+    case PAGE_ADSR:
+      current_page = new PageADSR();
+      break;
+    default:
+      current_page = new PageHome();
+      break;
+  }
+  current_page->enter();
 }
 
 
 void pot_changed(int value) {
-  menu_pot(value);
-  
-  last_pot_value = value;
-  switch (mode) {
-    case GMODE_CUSTOM_POTSYNC:
-      if (abs(value - POT_RANGE/2.0) < 5) { //Done !
-        gmode_switch(GMODE_CUSTOM_REC);
-        return;
-      }
-      display_potsync(value);
-    break;
-    case GMODE_CUSTOM_REC:
-    break;
-    case GMODE_ADSR:
-    {
-      adsr_t adsr;
-      gsynth_get_adsr(&adsr);
-      switch (adsr_select_idx) {
-        case 0: //Attack
-          adsr.a_ms = (int)((float)value *ADSR_MAX_ATTACK_MS/(float)POT_RANGE);
-        break;
-        case 1: //Decay
-          adsr.d_ms = (int)((float)value *ADSR_MAX_DECAY_MS/(float)POT_RANGE);
-        break;
-        case 2: //Sustain
-          adsr.s = (int)((float)value *ADSR_RANGE/(float)POT_RANGE);
-        break;
-        case 3: //Release
-          adsr.r_ms = (int)((float)value *ADSR_MAX_RELEASE_MS/(float)POT_RANGE);
-        break;
-      }
-      gsynth_set_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms);
-      display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, adsr_select_idx==0?true:false, adsr_select_idx==1?true:false, adsr_select_idx==2?true:false, adsr_select_idx==3?true:false);
-
-    }
-    break;
-    case GMODE_RUN:
-    break;
-    case GMODE_MAX:
-    break;
+  if (current_page != NULL) {
+    current_page->pot_changed(value);
   }
-
 }
 
 
 void bt1_pressed(int unused) {
-  if (mode == GMODE_ADSR) {
-    gmode_switch(GMODE_RUN);
-    return;
+  if (current_page != NULL) {
+    current_page->button1_pressed();
   }
-  menu_flip();
 }
 
 void bt2_pressed(int unused) {
-  if (mode == GMODE_ADSR) {
-    adsr_t adsr;
-    gsynth_get_adsr(&adsr);
-
-    adsr_select_idx = (adsr_select_idx+1)%4;
-    display_adsr(adsr.a_ms, adsr.d_ms, adsr.s, adsr.r_ms, adsr_select_idx==0?true:false, adsr_select_idx==1?true:false, adsr_select_idx==2?true:false, adsr_select_idx==3?true:false);
-    return;
+  if (current_page != NULL) {
+    current_page->button2_pressed();
   }
-  menu_select();
 }
 
 
