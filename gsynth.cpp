@@ -60,7 +60,7 @@ void gsynth_setup() {
 
   init_voices();
   gsynth_select_wave(WAVE_SIN);
-  gsynth_set_adsr(50, 18, 800, 0);
+  gsynth_set_adsr(115, 200, 1020, 540);
   display_needs_refresh = true;
 }
 

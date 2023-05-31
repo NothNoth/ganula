@@ -18,10 +18,14 @@ void PageRec::enter(){
 }
 
 void PageRec::leave(){
-
+  display_clear();
 }
 
 void PageRec::loop() {
+  if (pot_sync) {
+    return;
+  }
+
   if (millis() - custom_rec_ts > CUSTOM_REC_SAMPLE_POINT_MS) {
       custom_rec_idx++;
 
@@ -49,16 +53,18 @@ void PageRec::button2_pressed(){
 void PageRec::pot_changed(int value) {
   last_pot_value = value;
 
-  if (pot_sync) {
-    if (abs(value - POT_RANGE/2.0) < 5) { //Done !
-        pot_sync = false;
-        custom_rec_idx = 0;
-        custom_rec_ts = millis();
-        memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE*sizeof(unsigned short));
-        display_rec(custom_rec_idx, last_pot_value, customrecsample);
-        return;
-    }
-    display_potsync(value);
-}
+  if (!pot_sync) {
+    return;
+  }
+
+  if (abs(value - POT_RANGE/2.0) < 5) { //Done !
+      pot_sync = false;
+      custom_rec_idx = 0;
+      custom_rec_ts = millis();
+      memset(customrecsample, 0x00, CUSTOM_REC_SAMPLE_SIZE*sizeof(unsigned short));
+      display_rec(custom_rec_idx, last_pot_value, customrecsample);
+      return;
+  }
+  display_potsync(value);
 }
 
